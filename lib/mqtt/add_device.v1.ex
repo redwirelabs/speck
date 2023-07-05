@@ -6,4 +6,11 @@ defmodule MQTT.AddDevice.V1 do
   attribute :rs485_address, :integer, min: 1, max: 255
   attribute :serial_number, :string,  length: 16
   attribute :location,      :string,  optional: true
+
+  # attribute :some_list, [:string]
+
+  # attribute :foo do
+  #   attribute :bar, :string
+  #   attribute :baz, :string
+  # end
 end
