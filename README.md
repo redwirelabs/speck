@@ -5,35 +5,35 @@ Goal: Input validation & protocol documentation. You could hand the schemas off 
 ```elixir
 # Validation layer
 
-%WebsocketMessage.ConfigureThermostat{}
-%WebsocketMessage.RemoveThermostat{}
+%MQTT.AddDevice{}
+%MQTT.RemoveDevice{}
 
 # Model layer
 
-%Thermostat{}
+%Device{}
 ```
 
 The messages above can be versioned.
 
 ```elixir
-# websocket/v1/configure_thermostat.ex
-%WebsocketMessage.V1.ConfigureThermostat{}
+# mqtt/v1/add_device.ex
+%MQTT.V1.AddDevice{}
 
-# websocket/configure_thermostat.v1.ex
-%WebsocketMessage.ConfigureThermostat.V1{}
+# mqtt/add_device.v1.ex
+%MQTT.AddDevice.V1{}
 ```
 
 It's ok to transform. In the input handler, perform the message validation. If the payload is invalid, it can fail fast and return the error(s) upstream. If it succeeds, transform the message into internal data (struct) and pass it to the model/context layer.
 
 ```elixir
-message = coerce(ConfigureThermostat, params)
+message = coerce(MQTT.AddDevice.V1, params)
 
-settings = %Thermostat{
+settings = %Device{
   id: message.id,
-  modbus_address: message.modbus_address
+  rs485_address: message.rs485_address
 }
 
-Thermostat.configure(settings)
+Device.configure(settings)
 ```
 
 ## Installation
