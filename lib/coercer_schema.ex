@@ -1,30 +1,36 @@
 defmodule Coercer.Schema do
-  defmacro __before_compile__(_env) do
-    quote do
-      @doc false
-      def __attributes, do: @__attributes
-    end
-  end
-
   defmacro __using__(_args) do
     quote do
       import Coercer.Schema, only: [attribute: 2, attribute: 3]
-      # require Coercer.Schema
 
-      # def attribute(name, type), do: IO.inspect {name, type}
-      # def attribute(name, type, source_name), do: IO.inspect {name, type, source_name}
+      Module.register_attribute(__MODULE__, :attributes, [])
+      Module.register_attribute(__MODULE__, :reversed_attributes,
+        accumulate: true,
+        persist: false
+      )
+
+      @before_compile Coercer.Schema
     end
   end
 
-  defmacro attribute(name, type) do
+  defmacro __before_compile__(env) do
+    reversed_attributes =
+      Module.get_attribute(env.module, :reversed_attributes, [])
+      |> Enum.reverse
+    
+    Module.put_attribute(env.module, :attributes, reversed_attributes)
+
     quote do
-      IO.inspect {unquote(name), unquote(type)}
+      defstruct Enum.map(@attributes, &elem(&1, 0))
+
+      @doc false
+      def attributes, do: @attributes
     end
   end
 
-  defmacro attribute(name, type, source_name) do
+  defmacro attribute(name, type, opts \\ []) do
     quote do
-      IO.inspect {unquote(name), unquote(type), unquote(source_name)}
+      @reversed_attributes {unquote(name), unquote(type), unquote(opts)}
     end
   end
 end

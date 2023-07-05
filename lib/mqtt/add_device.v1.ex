@@ -1,5 +1,5 @@
 defmodule MQTT.AddDevice.V1 do
-  use Schema
+  use Coercer.Schema
 
   attribute :uuid,          :string,  format: ~r/\Ad{5}\-d{5}\-d{5}\-d{5}\-d{5}\z/
   attribute :type,          :atom,    values: ["temperature", "humidity", "air_quality"]
