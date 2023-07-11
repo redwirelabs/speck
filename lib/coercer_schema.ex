@@ -19,16 +19,8 @@ defmodule Coercer.Schema do
       {:name, _, [name]}, acc ->
         Map.put(acc, :name, name)
 
-      # {:attribute, _, [name, [do: {:__block__, _, _attributes}]]}, acc ->
-      #   # ----------------------------------------------------------------------
-      #   # TODO: Build nested attributes
-      #   # ----------------------------------------------------------------------
-      #   attributes = acc.attributes ++ [{name, :map}]
-      #   Map.put(acc, :attributes, attributes)
-
-      {:attribute, _, [name, type, opts_ast]}, acc ->
-        {opts, _} = Code.eval_quoted(opts_ast)
-        attributes = acc.attributes ++ [{name, type, opts}]
+      {:attribute, _, _} = attribute_ast, acc ->
+        attributes = acc.attributes ++ [build_attribute(attribute_ast)]
         Map.put(acc, :attributes, attributes)
 
       _, acc ->
@@ -47,5 +39,22 @@ defmodule Coercer.Schema do
       end
 
     Code.eval_quoted(module_ast, [], [file: file])
+  end
+
+  defp build_attribute({:attribute, _, [name, [do: {:__block__, _, attributes_ast}]]}) do
+    {name, :map, [], Enum.map(attributes_ast, &build_attribute/1)}
+  end
+
+  defp build_attribute({:attribute, _, [name, [do: attributes_ast]]}) do
+    {name, :map, [], [build_attribute(attributes_ast)]}
+  end
+
+  defp build_attribute({:attribute, _, [name, type]}) do
+    {name, type, []}
+  end
+
+  defp build_attribute({:attribute, _, [name, type, opts_ast]}) do
+    {opts, _} = Code.eval_quoted(opts_ast)
+    {name, type, opts}
   end
 end
