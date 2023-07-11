@@ -1,36 +1,51 @@
 defmodule Coercer.Schema do
-  defmacro __using__(_args) do
-    quote do
-      import Coercer.Schema, only: [attribute: 2, attribute: 3]
+  @after_compile __MODULE__
 
-      Module.register_attribute(__MODULE__, :attributes, [])
-      Module.register_attribute(__MODULE__, :reversed_attributes,
-        accumulate: true,
-        persist: false
-      )
+  def __after_compile__(_env, _bytecode) do
+    file = "protocol/mqtt/add_device.v1.exs"
 
-      @before_compile Coercer.Schema
-    end
-  end
+    file_ast =
+      file
+      |> File.read!
+      |> Code.string_to_quoted!
 
-  defmacro __before_compile__(env) do
-    reversed_attributes =
-      Module.get_attribute(env.module, :reversed_attributes, [])
-      |> Enum.reverse
-    
-    Module.put_attribute(env.module, :attributes, reversed_attributes)
+    {:__block__, _, top_ast} = file_ast
 
-    quote do
-      defstruct Enum.map(@attributes, &elem(&1, 0))
+    context = Enum.reduce(top_ast, %{attributes: []}, fn
+      {:struct, _, [{:__aliases__, _, _namespace} = module_ast]}, acc ->
+        {module, _} = Code.eval_quoted(module_ast)
+        Map.put(acc, :module, module)
 
-      @doc false
-      def attributes, do: @attributes
-    end
-  end
+      {:name, _, [name]}, acc ->
+        Map.put(acc, :name, name)
 
-  defmacro attribute(name, type, opts \\ []) do
-    quote do
-      @reversed_attributes {unquote(name), unquote(type), unquote(opts)}
-    end
+      # {:attribute, _, [name, [do: {:__block__, _, _attributes}]]}, acc ->
+      #   # ----------------------------------------------------------------------
+      #   # TODO: Build nested attributes
+      #   # ----------------------------------------------------------------------
+      #   attributes = acc.attributes ++ [{name, :map}]
+      #   Map.put(acc, :attributes, attributes)
+
+      {:attribute, _, [name, type, opts_ast]}, acc ->
+        {opts, _} = Code.eval_quoted(opts_ast)
+        attributes = acc.attributes ++ [{name, type, opts}]
+        Map.put(acc, :attributes, attributes)
+
+      _, acc ->
+        acc
+    end)
+
+    top_level_attribute_names = Enum.map(context.attributes, &elem(&1, 0))
+
+    module_ast =
+      quote do
+        defmodule unquote(Macro.escape(context.module)) do
+          defstruct unquote(Macro.escape(top_level_attribute_names))
+
+          def attributes, do: unquote(Macro.escape(context.attributes))
+        end
+      end
+
+    Code.eval_quoted(module_ast, [], [file: file])
   end
 end
