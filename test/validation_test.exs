@@ -8,6 +8,10 @@ defmodule Validation.Test do
       "rs485_address"  => "5",
       "serial_number"  => "DEVICE1234567890",
       # low_power_mode => not present
+      "dns_servers"    => [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
       "metadata"       => %{
         "location"   => "Warehouse 1",
         "department" => "Logistics",
@@ -26,6 +30,10 @@ defmodule Validation.Test do
       serial_number:  "DEVICE1234567890",
       wifi_ssid:      nil,
       low_power_mode: false,
+      dns_servers:    [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
       metadata:       %{
         location:   "Warehouse 1",
         department: "Logistics",

@@ -10,8 +10,7 @@ attribute :rs485_address,  :integer, min: 1, max: 255
 attribute :serial_number,  :string,  length: 16
 attribute :wifi_ssid,      :string,  optional: true
 attribute :low_power_mode, :boolean, optional: true
-
-# attribute :some_list, [:string]
+attribute :dns_servers,    [:string]
 
 attribute :metadata do
   attribute :location, :string

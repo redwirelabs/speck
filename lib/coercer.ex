@@ -37,6 +37,10 @@ defmodule Coercer do
     end)
   end
 
+  defp do_coerce([type], value, opts) do
+    Enum.map(value, &do_coerce(type, &1, opts))
+  end
+
   defp do_coerce(:boolean, value, _opts) when is_boolean(value), do: value
 
   defp do_coerce(:integer, value, _opts) when is_integer(value), do: value
