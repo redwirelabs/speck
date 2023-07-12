@@ -1,9 +1,54 @@
-defmodule Coercer.Schema do
-  @after_compile __MODULE__
+defmodule Mix.Tasks.Compile.Validation do
+  @moduledoc """
+  Compiles protocol schemas
+  """
 
-  def __after_compile__(_env, _bytecode) do
-    file = "protocol/mqtt/add_device.v1.exs"
+  use Mix.Task.Compiler
 
+  @schema_path Application.compile_env(:validation_test, :schema_path, "protocol")
+  @manifest_path Path.join(Mix.Project.app_path, "validation.manifest")
+
+  @impl Mix.Task.Compiler
+  def run(_args) do
+    files = Path.wildcard("#{@schema_path}/**/*.ex")
+    hashes = hashes(files)
+    manifest = load_manifest()
+
+    modified_files =
+      hashes
+      |> Enum.reject(&Enum.member?(manifest, &1))
+      |> Enum.map(fn {_hash, file} -> file end)
+
+    Enum.each(modified_files, fn file ->
+      Mix.Shell.IO.info "Compiling #{file}"
+
+      compile(file)
+      |> Enum.each(fn {module, bytecode} ->
+        path = Path.join([Mix.Project.app_path, "ebin", "#{module}.beam"])
+
+        File.mkdir_p(Path.dirname(path))
+        File.write(path, bytecode)
+      end)
+    end)
+
+    files
+    |> hashes()
+    |> save_manifest()    
+
+    :ok
+  end
+
+  @impl Mix.Task.Compiler
+  def manifests do
+    [@manifest_path]
+  end
+
+  @impl Mix.Task.Compiler
+  def clean do
+    File.rm_rf(@manifest_path)
+  end
+
+  defp compile(file) do
     file_ast =
       file
       |> File.read!
@@ -38,7 +83,7 @@ defmodule Coercer.Schema do
         end
       end
 
-    Code.eval_quoted(module_ast, [], [file: file])
+    Code.compile_quoted(module_ast, file)
   end
 
   defp build_attribute({:attribute, _, [[name], opts_ast, [do: {:__block__, _, attributes_ast}]]}) do
@@ -70,5 +115,31 @@ defmodule Coercer.Schema do
   defp build_attribute({:attribute, _, [name, type, opts_ast]}) do
     {opts, _} = Code.eval_quoted(opts_ast)
     {name, type, opts}
+  end
+
+  defp hashes(files) when is_list(files) do
+    Enum.map(files, fn file ->
+      {hash(file), file}
+    end)
+  end
+
+  defp hash(file) when is_binary(file) do
+    contents = File.read!(file)
+
+    :crypto.hash(:sha256, contents)
+    |> Base.encode16
+    |> String.downcase
+  end
+
+  defp load_manifest do
+    case File.read(@manifest_path) do
+      {:ok, contents} -> :erlang.binary_to_term(contents)
+      {:error, :enoent} -> []
+      {:error, reason} -> raise "Failed to load manifest: #{reason}"
+    end
+  end
+
+  defp save_manifest(hashes) do
+    File.write!(@manifest_path, :erlang.term_to_binary(hashes))
   end
 end

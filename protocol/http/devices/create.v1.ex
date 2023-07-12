@@ -10,13 +10,3 @@ attribute :type,          :atom,    values: ["temperature", "humidity", "air_qua
 attribute :rs485_address, :integer, min: 1, max: 255
 attribute :serial_number, :string,  length: 16
 attribute :location,      :string,  optional: true
-
-attribute :foo do
-  attribute :bar, :string
-  attribute :baz, :string
-end
-
-attribute [:foo], max: 10 do
-  attribute :bar, :string
-  attribute :baz, :string
-end

@@ -10,13 +10,3 @@ attribute :type,          :atom,    optional: true, values: ["temperature", "hum
 attribute :rs485_address, :integer, optional: true, min: 1, max: 255
 attribute :serial_number, :string,  optional: true, length: 16
 attribute :location,      :string,  optional: true
-
-attribute :foo, optional: true do
-  attribute :bar, :string
-  attribute :baz, :string
-end
-
-attribute [:foo], optional: true, max: 10 do
-  attribute :bar, :string
-  attribute :baz, :string
-end

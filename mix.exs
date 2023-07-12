@@ -6,7 +6,9 @@ defmodule ValidationTest.MixProject do
       app: :validation_test,
       version: "0.1.0",
       elixir: "~> 1.14",
-      start_permanent: Mix.env() == :prod,
+      start_permanent: Mix.env == :prod,
+      compilers: Mix.compilers ++ [:validation],
+      xref: [exclude: [:crypto]],
       deps: deps()
     ]
   end
