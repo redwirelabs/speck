@@ -27,6 +27,11 @@ defmodule Coercer do
 
   defp do_coerce(:map, value, _opts, attributes) do
     Enum.reduce(attributes, %{}, fn
+      {name, [:map], opts, attributes}, acc ->
+        raw_values = value[to_string(name)] || value[name]
+        value = Enum.map(raw_values, &do_coerce(:map, &1, opts, attributes))
+        Map.put(acc, name, value)
+
       {name, :map, opts, attributes}, acc ->
         raw_value = value[to_string(name)] || value[name]
         do_coerce(name, :map, raw_value, opts, acc, attributes)

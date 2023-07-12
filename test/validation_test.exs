@@ -12,13 +12,17 @@ defmodule Validation.Test do
         "1.1.1.1",
         "1.0.0.1"
       ],
-      "metadata"       => %{
+      "metadata" => %{
         "location"   => "Warehouse 1",
         "department" => "Logistics",
-        "sensors"    => %{
-          "temperature" => true
+        "ports"      => %{
+          "rs485" => 4
         }
-      }
+      },
+      "sensors" => [
+        %{"type" => "temperature", "address" => 51},
+        %{"type" => "humidity",    "address" => 72}
+      ]
     }
 
     {:ok, device} = Coercer.coerce(MQTT.AddDevice.V1, params)
@@ -34,13 +38,17 @@ defmodule Validation.Test do
         "1.1.1.1",
         "1.0.0.1"
       ],
-      metadata:       %{
+      metadata: %{
         location:   "Warehouse 1",
         department: "Logistics",
-        sensors:    %{
-          temperature: true
+        ports:      %{
+          rs485: 4
         }
-      }
+      },
+      sensors: [
+        %{type: :temperature, address: 51},
+        %{type: :humidity, address: 72},
+      ]
     }
   end
 end

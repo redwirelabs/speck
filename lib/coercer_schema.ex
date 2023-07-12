@@ -41,6 +41,20 @@ defmodule Coercer.Schema do
     Code.eval_quoted(module_ast, [], [file: file])
   end
 
+  defp build_attribute({:attribute, _, [[name], opts_ast, [do: {:__block__, _, attributes_ast}]]}) do
+    {opts, _} = Code.eval_quoted(opts_ast)
+    {name, [:map], opts, Enum.map(attributes_ast, &build_attribute/1)}
+  end
+
+  defp build_attribute({:attribute, _, [[name], [do: {:__block__, _, attributes_ast}]]}) do
+    {name, [:map], [], Enum.map(attributes_ast, &build_attribute/1)}
+  end
+
+  defp build_attribute({:attribute, _, [name, opts_ast, [do: {:__block__, _, attributes_ast}]]}) do
+    {opts, _} = Code.eval_quoted(opts_ast)
+    {name, :map, opts, Enum.map(attributes_ast, &build_attribute/1)}
+  end
+
   defp build_attribute({:attribute, _, [name, [do: {:__block__, _, attributes_ast}]]}) do
     {name, :map, [], Enum.map(attributes_ast, &build_attribute/1)}
   end

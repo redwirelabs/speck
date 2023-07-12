@@ -16,12 +16,12 @@ attribute :metadata do
   attribute :location, :string
   attribute :department, :string
 
-  attribute :sensors do
-    attribute :temperature, :boolean
+  attribute :ports do
+    attribute :rs485, :integer
   end
 end
 
-# attribute [:foo], optional: true do
-#   attribute :bar, :string
-#   attribute :baz, :string
-# end
+attribute [:sensors], optional: true do
+  attribute :type,    :atom
+  attribute :address, :integer
+end
