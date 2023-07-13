@@ -9,6 +9,9 @@ defmodule Coercer do
   # This is the entry point for applying global options to coerced values.
   defp do_coerce(name, type, raw_value, opts, struct, attributes) do
     cond do
+      !is_nil(opts[:default]) && is_nil(raw_value) ->
+        Map.put(struct, name, opts[:default])
+
       opts[:optional] && is_nil(raw_value) && type == :boolean ->
         Map.put(struct, name, false)
 

@@ -51,4 +51,18 @@ defmodule Validation.Test do
       ]
     }
   end
+
+  test "can have a default value" do
+    params = %{}
+
+    {:ok, struct} = Coercer.coerce(TestSchema.Default, params)
+
+    assert struct == %TestSchema.Default{
+      param1: 2,
+      param2: 2.4,
+      param3: "foo",
+      param4: :foo,
+      param5: true
+    }
+  end
 end
