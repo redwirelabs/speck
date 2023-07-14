@@ -47,7 +47,7 @@ defmodule Validation.Test do
       },
       sensors: [
         %{type: :temperature, address: 51},
-        %{type: :humidity, address: 72},
+        %{type: :humidity,    address: 72},
       ]
     }
   end
@@ -64,5 +64,26 @@ defmodule Validation.Test do
       param4: :foo,
       param5: true
     }
+  end
+
+  test "returns error if a required value isn't present" do
+    params = %{}
+
+    expected = {:error, %{
+      uuid:          :not_present,
+      type:          :not_present,
+      rs485_address: :not_present,
+      serial_number: :not_present,
+      dns_servers:   :not_present,
+      metadata: %{
+        location:   :not_present,
+        department: :not_present,
+        ports: %{
+          rs485: :not_present
+        }
+      }
+    }}
+
+    assert expected == Coercer.coerce(MQTT.AddDevice.V1, params)
   end
 end
