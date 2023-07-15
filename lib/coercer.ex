@@ -40,6 +40,7 @@ defmodule Coercer do
 
           value ->
             {value, _error = nil}
+            |> apply_length(opts[:length])
             |> apply_min(opts[:min])
             |> apply_max(opts[:max])
             |> case do
@@ -149,6 +150,15 @@ defmodule Coercer do
   end
 
   defp apply_max({value, error}, _limit) do
+    {value, error}
+  end
+
+  defp apply_length({value, nil = _error}, limit) when not is_nil(limit) do
+    error = if String.length(value) == limit, do: nil, else: :wrong_length
+    {value, error}
+  end
+
+  defp apply_length({value, error}, _limit) do
     {value, error}
   end
 end

@@ -166,4 +166,20 @@ defmodule Validation.Test do
         }}
     end
   end
+
+  describe "length" do
+    test "coerces params that meet the required length" do
+      params = %{"param" => "abc"}
+
+      assert Coercer.coerce(TestSchema.Length, params) ==
+        {:ok, %TestSchema.Length{param: "abc"}}
+    end
+
+    test "returns an error if not equal to the required length" do
+      params = %{"param" => "a"}
+
+      assert Coercer.coerce(TestSchema.Length, params) ==
+        {:error, %{param: :wrong_length}}
+    end
+  end
 end
