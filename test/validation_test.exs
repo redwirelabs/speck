@@ -182,4 +182,20 @@ defmodule Validation.Test do
         {:error, %{param: :wrong_length}}
     end
   end
+
+  describe "format" do
+    test "coerces params that meet the required format" do
+      params = %{"param" => "abc"}
+
+      assert Coercer.coerce(TestSchema.Format, params) ==
+        {:ok, %TestSchema.Format{param: "abc"}}
+    end
+
+    test "returns an error if not in the required format" do
+      params = %{"param" => "ABC_DEF"}
+
+      assert Coercer.coerce(TestSchema.Format, params) ==
+        {:error, %{param: :wrong_format}}
+    end
+  end
 end

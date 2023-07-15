@@ -40,6 +40,7 @@ defmodule Coercer do
 
           value ->
             {value, _error = nil}
+            |> apply_format(opts[:format])
             |> apply_length(opts[:length])
             |> apply_min(opts[:min])
             |> apply_max(opts[:max])
@@ -159,6 +160,15 @@ defmodule Coercer do
   end
 
   defp apply_length({value, error}, _limit) do
+    {value, error}
+  end
+
+  defp apply_format({value, nil = _error}, format) when not is_nil(format) do
+    error = if Regex.match?(format, value), do: nil, else: :wrong_format
+    {value, error}
+  end
+
+  defp apply_format({value, error}, _format) do
     {value, error}
   end
 end
