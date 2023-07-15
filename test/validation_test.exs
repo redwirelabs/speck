@@ -198,4 +198,32 @@ defmodule Validation.Test do
         {:error, %{param: :wrong_format}}
     end
   end
+
+  describe "valid values" do
+    test "coerces params that are valid values" do
+      params = %{
+        "param_string" => "foo",
+        "param_atom"   => "bar"
+      }
+
+      assert Coercer.coerce(TestSchema.ValidValues, params) ==
+        {:ok, %TestSchema.ValidValues{
+          param_string: "foo",
+          param_atom:   :bar
+        }}
+    end
+
+    test "returns an error if not in the list of valid values" do
+      params = %{
+        "param_string" => "invalid",
+        "param_atom"   => "invalid"
+      }
+
+      assert Coercer.coerce(TestSchema.ValidValues, params) ==
+        {:error, %{
+          param_string: :invalid_value,
+          param_atom:   :invalid_value
+        }}
+    end
+  end
 end

@@ -40,6 +40,7 @@ defmodule Coercer do
 
           value ->
             {value, _error = nil}
+            |> apply_valid_values(opts[:values])
             |> apply_format(opts[:format])
             |> apply_length(opts[:length])
             |> apply_min(opts[:min])
@@ -169,6 +170,15 @@ defmodule Coercer do
   end
 
   defp apply_format({value, error}, _format) do
+    {value, error}
+  end
+
+  defp apply_valid_values({value, nil = _error}, valid_values) when not is_nil(valid_values) do
+    error = if Enum.member?(valid_values, value), do: nil, else: :invalid_value
+    {value, error}
+  end
+
+  defp apply_valid_values({value, error}, _valid_values) do
     {value, error}
   end
 end
