@@ -102,4 +102,68 @@ defmodule Validation.Test do
 
     assert Coercer.coerce(TestSchema.WrongType, params) == expected  
   end
+
+  describe "min limit" do
+    test "coerces params that meet the min limit" do
+      params = %{
+        "param_integer" => 1,
+        "param_float"   => 1.4,
+        "param_string"  => "ab"
+      }
+
+      assert Coercer.coerce(TestSchema.MinMax, params) ==
+        {:ok, %TestSchema.MinMax{
+          param_integer: 1,
+          param_float:   1.4,
+          param_string:  "ab"
+        }}
+    end
+
+    test "returns error if less than min limit" do
+      params = %{
+        "param_integer" => 0,
+        "param_float"   => -1.6,
+        "param_string"  => "a"
+      }
+
+      assert Coercer.coerce(TestSchema.MinMax, params) ==
+        {:error, %{
+          param_integer: :less_than_min,
+          param_float:   :less_than_min,
+          param_string:  :less_than_min
+        }}
+    end
+  end
+
+  describe "max limit" do
+    test "coerces params that meet the max limit" do
+      params = %{
+        "param_integer" => 10,
+        "param_float"   => 9.7,
+        "param_string"  => "abcdefgh"
+      }
+
+      assert Coercer.coerce(TestSchema.MinMax, params) ==
+        {:ok, %TestSchema.MinMax{
+          param_integer: 10,
+          param_float:   9.7,
+          param_string:  "abcdefgh"
+        }}
+    end
+
+    test "returns error if greater than max limit" do
+      params = %{
+        "param_integer" => 11,
+        "param_float"   => 15.3,
+        "param_string"  => "ABCDEFGHIJK"
+      }
+
+      assert Coercer.coerce(TestSchema.MinMax, params) ==
+        {:error, %{
+          param_integer: :greater_than_max,
+          param_float:   :greater_than_max,
+          param_string:  :greater_than_max
+        }}
+    end
+  end
 end

@@ -39,7 +39,16 @@ defmodule Coercer do
             {fields, Map.put(errors, name, error)}
 
           value ->
-            {Map.put(fields, name, value), errors}
+            {value, _error = nil}
+            |> apply_min(opts[:min])
+            |> apply_max(opts[:max])
+            |> case do
+              {value, nil} ->
+                {Map.put(fields, name, value), %{}}
+
+              {value, error} ->
+                {Map.put(fields, name, value), Map.put(errors, name, error)}
+            end
         end
     end
   end
@@ -108,4 +117,38 @@ defmodule Coercer do
   defp do_coerce(:atom, value, _opts) when is_atom(value), do: value
 
   defp do_coerce(_type, _value, _opts), do: {:error, :wrong_type}
+
+  defp apply_min({value, nil = _error}, limit) when not is_nil(limit) do
+    v =
+      cond do
+        is_float(value)   -> value
+        is_integer(value) -> value
+        is_binary(value)  -> String.length(value)
+      end
+
+    error = if v >= limit, do: nil, else: :less_than_min
+
+    {value, error}
+  end
+
+  defp apply_min({value, error}, _limit) do
+    {value, error}
+  end
+
+  defp apply_max({value, nil = _error}, limit) when not is_nil(limit) do
+    v =
+      cond do
+        is_float(value)   -> value
+        is_integer(value) -> value
+        is_binary(value)  -> String.length(value)
+      end
+
+    error = if v <= limit, do: nil, else: :greater_than_max
+
+    {value, error}
+  end
+
+  defp apply_max({value, error}, _limit) do
+    {value, error}
+  end
 end
