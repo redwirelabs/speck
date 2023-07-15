@@ -84,6 +84,22 @@ defmodule Validation.Test do
       }
     }}
 
-    assert expected == Coercer.coerce(MQTT.AddDevice.V1, params)
+    assert Coercer.coerce(MQTT.AddDevice.V1, params) == expected
+  end
+
+  test "returns error if value is the wrong type and can't be coerced" do
+    params = %{
+      "param1" => "invalid",
+      "param2" => "invalid",
+      "param3" => "invalid",
+    }
+
+    expected = {:error, %{
+      param1: :wrong_type,
+      param2: :wrong_type,
+      param3: :wrong_type
+    }}
+
+    assert Coercer.coerce(TestSchema.WrongType, params) == expected  
   end
 end

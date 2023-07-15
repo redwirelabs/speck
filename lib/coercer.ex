@@ -87,19 +87,25 @@ defmodule Coercer do
   defp do_coerce(:integer, value, _opts) when is_integer(value), do: value
   defp do_coerce(:integer, value, _opts) when is_float(value), do: trunc(value)
   defp do_coerce(:integer, value, _opts) when is_binary(value) do
-    {value, _} = Integer.parse(value)
-    value
+    case Integer.parse(value) do
+      {value, _} -> value
+      :error     -> {:error, :wrong_type}
+    end
   end
 
   defp do_coerce(:float, value, _opts) when is_float(value), do: value
   defp do_coerce(:float, value, _opts) when is_integer(value), do: value / 1
   defp do_coerce(:float, value, _opts) when is_binary(value) do
-    {value, _} = Float.parse(value)
-    value
+    case Float.parse(value) do
+      {value, _} -> value
+      :error     -> {:error, :wrong_type}
+    end
   end
 
   defp do_coerce(:string, value, _opts), do: to_string(value)
 
   defp do_coerce(:atom, value, _opts) when is_binary(value), do: String.to_atom(value)
   defp do_coerce(:atom, value, _opts) when is_atom(value), do: value
+
+  defp do_coerce(_type, _value, _opts), do: {:error, :wrong_type}
 end
