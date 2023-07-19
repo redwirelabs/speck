@@ -55,7 +55,7 @@ defmodule Speck do
             |> apply_max(opts[:max])
             |> case do
               {value, nil} ->
-                {Map.put(fields, name, value), %{}}
+                {Map.put(fields, name, value), errors}
 
               {value, error} ->
                 {Map.put(fields, name, value), Map.put(errors, name, error)}
@@ -72,12 +72,22 @@ defmodule Speck do
         coerced_maplist =
           raw_values
           |> Enum.map(&do_validate(:map, &1, opts, attributes))
-          |> Enum.reduce({[], []}, fn
-            {value, %{}}, {values, errors} ->
-              {values ++ [value], errors}
+          |> Enum.with_index
+          |> Enum.reduce({_values = [], _errors = []}, fn
+            {{value, error}, _index}, {values, errors}
+              when error == %{} and errors == [] ->
+                {values ++ [value], errors}
 
-            {value, error}, {values, errors} ->
-              {values ++ [value], errors ++ [error]}
+            {{_value, error}, _index}, {values, errors}
+              when error == %{} ->
+                {values, errors}
+
+            {{_value, error}, index}, {_values, errors} ->
+              map_errors = Enum.reduce(error, [], fn {k, v}, acc ->
+                acc ++ [%{index: index, attribute: k, reason: v}]
+              end)
+
+              {[], errors ++ map_errors}
           end)
 
         case coerced_maplist do

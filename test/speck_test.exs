@@ -100,7 +100,50 @@ defmodule Speck.Test do
       param3: :wrong_type
     }}
 
-    assert Speck.validate(TestSchema.WrongType, params) == expected  
+    assert Speck.validate(TestSchema.WrongType, params) == expected
+  end
+
+  test "can coerce a list of maps" do
+    params = %{
+      "devices" => [
+        %{"id" =>  1,  "type" => "valid"},
+        %{"id" =>  2,  "type" => "valid"},
+        %{"id" => "3", "type" => "valid"}
+      ]
+    }
+
+    expected = {:ok, %TestSchema.MapList{
+      devices: [
+        %{id: 1, type: "valid"},
+        %{id: 2, type: "valid"},
+        %{id: 3, type: "valid"}
+      ]
+    }}
+
+    assert Speck.validate(TestSchema.MapList, params) == expected
+  end
+
+  test "returns errors if items in a list of maps can't be coerced" do
+    params = %{
+      "devices" => [
+        %{"id" => 12345,     "type" => "valid"},
+        %{"id" => "invalid", "type" => "invalid"},
+        %{"id" => "invalid", "type" => "valid"},
+        %{}
+      ]
+    }
+
+    expected = {:error, %{
+      devices: [
+        %{index: 1, attribute: :id,   reason: :wrong_type},
+        %{index: 1, attribute: :type, reason: :invalid_value},
+        %{index: 2, attribute: :id,   reason: :wrong_type},
+        %{index: 3, attribute: :id,   reason: :not_present},
+        %{index: 3, attribute: :type, reason: :not_present}
+      ]
+    }}
+
+    assert Speck.validate(TestSchema.MapList, params) == expected
   end
 
   describe "min limit" do
