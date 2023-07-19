@@ -1,4 +1,11 @@
 defmodule Speck do
+  @moduledoc """
+  Input validation & protocol documentation
+  """
+
+  @doc """
+  Validate and coerce the params according to a schema.
+  """
   def validate(schema, params) do
     case do_validate(:map, params, [], schema.attributes) do
       {fields, errors} when errors == %{} -> 

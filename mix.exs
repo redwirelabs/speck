@@ -9,9 +9,11 @@ defmodule Speck.MixProject do
       start_permanent: Mix.env == :prod,
       compilers: Mix.compilers ++ [:speck],
       xref: [exclude: [:crypto]],
+      aliases: aliases(),
       description: description(),
       package: package(),
       deps: deps(),
+      docs: docs(),
     ]
   end
 
@@ -22,11 +24,16 @@ defmodule Speck.MixProject do
     ]
   end
 
+  defp aliases do
+    [
+      "docs.show": ["docs", &open("doc/index.html", &1)],
+    ]
+  end
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:ex_doc, "~> 0.30", only: :dev, runtime: false},
     ]
   end
 
@@ -34,6 +41,13 @@ defmodule Speck.MixProject do
     """
     Input validation & protocol documentation
     """
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md", "LICENSE.txt"]
+    ]
   end
 
   defp package do
@@ -48,5 +62,15 @@ defmodule Speck.MixProject do
         "README.md",
       ]
     ]
+  end
+
+  # Open a file with the default application for its type.
+  defp open(file, _args) do
+    open_command =
+      System.find_executable("xdg-open") # Linux
+      || System.find_executable("open")  # Mac
+      || raise "Could not find executable 'open' or 'xdg-open'"
+
+    System.cmd(open_command, [file])
   end
 end

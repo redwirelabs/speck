@@ -77,6 +77,7 @@ defmodule Mix.Tasks.Compile.Speck do
     module_ast =
       quote do
         defmodule unquote(Macro.escape(context.module)) do
+          @moduledoc false
           defstruct unquote(Macro.escape(top_level_attribute_names))
 
           def attributes, do: unquote(Macro.escape(context.attributes))
