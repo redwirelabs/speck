@@ -13,7 +13,7 @@ attribute :low_power_mode, :boolean, optional: true
 attribute :dns_servers,    [:string]
 
 attribute :metadata do
-  attribute :location, :string
+  attribute :location,   :string
   attribute :department, :string
 
   attribute :ports do

@@ -1,6 +1,6 @@
-defmodule Coercer do
-  def coerce(schema, params) do
-    case do_coerce(:map, params, [], schema.attributes) do
+defmodule Speck do
+  def validate(schema, params) do
+    case do_validate(:map, params, [], schema.attributes) do
       {fields, errors} when errors == %{} -> 
         struct = struct(schema, fields)
         {:ok, struct}
@@ -16,7 +16,7 @@ defmodule Coercer do
         {Map.put(fields, name, opts[:default]), errors}
 
       type == :map ->
-        case do_coerce(type, raw_value, opts, attributes) do
+        case do_validate(type, raw_value, opts, attributes) do
           {value, map_errors} when map_errors == %{} ->
             {Map.put(fields, name, value), errors}
 
@@ -34,7 +34,7 @@ defmodule Coercer do
         {fields, errors}
 
       true ->
-        case do_coerce(type, raw_value, opts) do
+        case do_validate(type, raw_value, opts) do
           {:error, error} ->
             {fields, Map.put(errors, name, error)}
 
@@ -56,14 +56,14 @@ defmodule Coercer do
     end
   end
 
-  defp do_coerce(:map, value, _opts, attributes) do
+  defp do_validate(:map, value, _opts, attributes) do
     Enum.reduce(attributes, {%{}, %{}}, fn
       {name, [:map], opts, attributes}, {fields, errors} ->
         raw_values = value[to_string(name)] || value[name] || []
 
         coerced_maplist =
           raw_values
-          |> Enum.map(&do_coerce(:map, &1, opts, attributes))
+          |> Enum.map(&do_validate(:map, &1, opts, attributes))
           |> Enum.reduce({[], []}, fn
             {value, %{}}, {values, errors} ->
               {values ++ [value], errors}
@@ -90,36 +90,36 @@ defmodule Coercer do
     end)
   end
 
-  defp do_coerce([type], value, opts) do
-    Enum.map(value, &do_coerce(type, &1, opts))
+  defp do_validate([type], value, opts) do
+    Enum.map(value, &do_validate(type, &1, opts))
   end
 
-  defp do_coerce(:boolean, value, _opts) when is_boolean(value), do: value
+  defp do_validate(:boolean, value, _opts) when is_boolean(value), do: value
 
-  defp do_coerce(:integer, value, _opts) when is_integer(value), do: value
-  defp do_coerce(:integer, value, _opts) when is_float(value), do: trunc(value)
-  defp do_coerce(:integer, value, _opts) when is_binary(value) do
+  defp do_validate(:integer, value, _opts) when is_integer(value), do: value
+  defp do_validate(:integer, value, _opts) when is_float(value), do: trunc(value)
+  defp do_validate(:integer, value, _opts) when is_binary(value) do
     case Integer.parse(value) do
       {value, _} -> value
       :error     -> {:error, :wrong_type}
     end
   end
 
-  defp do_coerce(:float, value, _opts) when is_float(value), do: value
-  defp do_coerce(:float, value, _opts) when is_integer(value), do: value / 1
-  defp do_coerce(:float, value, _opts) when is_binary(value) do
+  defp do_validate(:float, value, _opts) when is_float(value), do: value
+  defp do_validate(:float, value, _opts) when is_integer(value), do: value / 1
+  defp do_validate(:float, value, _opts) when is_binary(value) do
     case Float.parse(value) do
       {value, _} -> value
       :error     -> {:error, :wrong_type}
     end
   end
 
-  defp do_coerce(:string, value, _opts), do: to_string(value)
+  defp do_validate(:string, value, _opts), do: to_string(value)
 
-  defp do_coerce(:atom, value, _opts) when is_binary(value), do: String.to_atom(value)
-  defp do_coerce(:atom, value, _opts) when is_atom(value), do: value
+  defp do_validate(:atom, value, _opts) when is_binary(value), do: String.to_atom(value)
+  defp do_validate(:atom, value, _opts) when is_atom(value), do: value
 
-  defp do_coerce(_type, _value, _opts), do: {:error, :wrong_type}
+  defp do_validate(_type, _value, _opts), do: {:error, :wrong_type}
 
   defp apply_min({value, nil = _error}, limit) when not is_nil(limit) do
     v =

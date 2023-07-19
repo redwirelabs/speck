@@ -1,4 +1,4 @@
-defmodule Validation.Test do
+defmodule Speck.Test do
   use ExUnit.Case
 
   test "coerces params to struct" do
@@ -25,7 +25,7 @@ defmodule Validation.Test do
       ]
     }
 
-    {:ok, device} = Coercer.coerce(MQTT.AddDevice.V1, params)
+    {:ok, device} = Speck.validate(MQTT.AddDevice.V1, params)
 
     assert device == %MQTT.AddDevice.V1{
       uuid:           "11111-22222-33333-44444-55555",
@@ -55,7 +55,7 @@ defmodule Validation.Test do
   test "can have a default value" do
     params = %{}
 
-    {:ok, struct} = Coercer.coerce(TestSchema.Default, params)
+    {:ok, struct} = Speck.validate(TestSchema.Default, params)
 
     assert struct == %TestSchema.Default{
       param1: 2,
@@ -84,7 +84,7 @@ defmodule Validation.Test do
       }
     }}
 
-    assert Coercer.coerce(MQTT.AddDevice.V1, params) == expected
+    assert Speck.validate(MQTT.AddDevice.V1, params) == expected
   end
 
   test "returns error if value is the wrong type and can't be coerced" do
@@ -100,7 +100,7 @@ defmodule Validation.Test do
       param3: :wrong_type
     }}
 
-    assert Coercer.coerce(TestSchema.WrongType, params) == expected  
+    assert Speck.validate(TestSchema.WrongType, params) == expected  
   end
 
   describe "min limit" do
@@ -111,7 +111,7 @@ defmodule Validation.Test do
         "param_string"  => "ab"
       }
 
-      assert Coercer.coerce(TestSchema.MinMax, params) ==
+      assert Speck.validate(TestSchema.MinMax, params) ==
         {:ok, %TestSchema.MinMax{
           param_integer: 1,
           param_float:   1.4,
@@ -126,7 +126,7 @@ defmodule Validation.Test do
         "param_string"  => "a"
       }
 
-      assert Coercer.coerce(TestSchema.MinMax, params) ==
+      assert Speck.validate(TestSchema.MinMax, params) ==
         {:error, %{
           param_integer: :less_than_min,
           param_float:   :less_than_min,
@@ -143,7 +143,7 @@ defmodule Validation.Test do
         "param_string"  => "abcdefgh"
       }
 
-      assert Coercer.coerce(TestSchema.MinMax, params) ==
+      assert Speck.validate(TestSchema.MinMax, params) ==
         {:ok, %TestSchema.MinMax{
           param_integer: 10,
           param_float:   9.7,
@@ -158,7 +158,7 @@ defmodule Validation.Test do
         "param_string"  => "ABCDEFGHIJK"
       }
 
-      assert Coercer.coerce(TestSchema.MinMax, params) ==
+      assert Speck.validate(TestSchema.MinMax, params) ==
         {:error, %{
           param_integer: :greater_than_max,
           param_float:   :greater_than_max,
@@ -171,14 +171,14 @@ defmodule Validation.Test do
     test "coerces params that meet the required length" do
       params = %{"param" => "abc"}
 
-      assert Coercer.coerce(TestSchema.Length, params) ==
+      assert Speck.validate(TestSchema.Length, params) ==
         {:ok, %TestSchema.Length{param: "abc"}}
     end
 
     test "returns an error if not equal to the required length" do
       params = %{"param" => "a"}
 
-      assert Coercer.coerce(TestSchema.Length, params) ==
+      assert Speck.validate(TestSchema.Length, params) ==
         {:error, %{param: :wrong_length}}
     end
   end
@@ -187,14 +187,14 @@ defmodule Validation.Test do
     test "coerces params that meet the required format" do
       params = %{"param" => "abc"}
 
-      assert Coercer.coerce(TestSchema.Format, params) ==
+      assert Speck.validate(TestSchema.Format, params) ==
         {:ok, %TestSchema.Format{param: "abc"}}
     end
 
     test "returns an error if not in the required format" do
       params = %{"param" => "ABC_DEF"}
 
-      assert Coercer.coerce(TestSchema.Format, params) ==
+      assert Speck.validate(TestSchema.Format, params) ==
         {:error, %{param: :wrong_format}}
     end
   end
@@ -206,7 +206,7 @@ defmodule Validation.Test do
         "param_atom"   => "bar"
       }
 
-      assert Coercer.coerce(TestSchema.ValidValues, params) ==
+      assert Speck.validate(TestSchema.ValidValues, params) ==
         {:ok, %TestSchema.ValidValues{
           param_string: "foo",
           param_atom:   :bar
@@ -219,7 +219,7 @@ defmodule Validation.Test do
         "param_atom"   => "invalid"
       }
 
-      assert Coercer.coerce(TestSchema.ValidValues, params) ==
+      assert Speck.validate(TestSchema.ValidValues, params) ==
         {:error, %{
           param_string: :invalid_value,
           param_atom:   :invalid_value

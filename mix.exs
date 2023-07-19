@@ -1,13 +1,13 @@
-defmodule ValidationTest.MixProject do
+defmodule Speck.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :validation_test,
+      app: :speck,
       version: "0.1.0",
       elixir: "~> 1.14",
       start_permanent: Mix.env == :prod,
-      compilers: Mix.compilers ++ [:validation],
+      compilers: Mix.compilers ++ [:speck],
       xref: [exclude: [:crypto]],
       deps: deps()
     ]

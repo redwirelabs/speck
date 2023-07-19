@@ -1,12 +1,12 @@
-defmodule Mix.Tasks.Compile.Validation do
+defmodule Mix.Tasks.Compile.Speck do
   @moduledoc """
-  Compiles protocol schemas
+  Compiles Speck schemas
   """
 
   use Mix.Task.Compiler
 
-  @schema_path Application.compile_env(:validation_test, :schema_path, "protocol")
-  @manifest_path Path.join(Mix.Project.app_path, "validation.manifest")
+  @schema_path Application.compile_env(:speck, :schema_path, "protocol")
+  @manifest_path Path.join(Mix.Project.app_path, "speck.manifest")
 
   @impl Mix.Task.Compiler
   def run(_args) do
