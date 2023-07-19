@@ -14,6 +14,12 @@ defmodule Speck.MixProject do
       package: package(),
       deps: deps(),
       docs: docs(),
+      dialyzer: [
+        ignore_warnings: "dialyzer.ignore.exs",
+        plt_add_apps: [:mix],
+        list_unused_filters: true,
+        plt_file: {:no_warn, plt_file_path()},
+      ],
     ]
   end
 
@@ -33,6 +39,7 @@ defmodule Speck.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:dialyxir, "~> 1.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.30", only: :dev, runtime: false},
     ]
   end
@@ -72,5 +79,12 @@ defmodule Speck.MixProject do
       || raise "Could not find executable 'open' or 'xdg-open'"
 
     System.cmd(open_command, [file])
+  end
+
+  # Path to the dialyzer .plt file.
+  defp plt_file_path do
+    [Mix.Project.build_path(), "plt", "dialyxir.plt"]
+    |> Path.join()
+    |> Path.expand()
   end
 end
