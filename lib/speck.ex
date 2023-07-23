@@ -41,6 +41,35 @@ defmodule Speck do
       opts[:optional] && is_nil(raw_value) ->
         {fields, errors}
 
+      is_list(type) ->
+        raw_value
+        |> Enum.with_index
+        |> Enum.map(fn {value, index} ->
+          {value, error} =
+              apply_filters(:item, hd(type), value, opts, fields, %{}, nil)
+
+          {index, value[:item], error[:item]}
+        end)
+        |> Enum.reduce({_values = [], _errors = []}, fn
+          {_index, value, error}, {values, errors}
+            when is_nil(error) and errors == [] ->
+              {values ++ [value], errors}
+
+          {_index, _value, error}, {_values, errors}
+            when is_nil(error) ->
+              {[], errors}
+
+          {index, _value, error}, {_values, errors} ->
+            {[], errors ++ [%{index: index, reason: error}]}
+        end)
+        |> case do
+          {value, []} ->
+            {Map.put(fields, name, value), errors}
+
+          {_value, error} ->
+            {fields, Map.put(errors, name, error)}
+        end
+
       true ->
         case do_validate(type, raw_value, opts) do
           {:error, error} ->
@@ -106,10 +135,6 @@ defmodule Speck do
         raw_value = value[to_string(name)] || value[name]
         apply_filters(name, type, raw_value, opts, fields, errors, nil)
     end)
-  end
-
-  defp do_validate([type], value, opts) do
-    Enum.map(value, &do_validate(type, &1, opts))
   end
 
   defp do_validate(:boolean, value, _opts) when is_boolean(value), do: value

@@ -103,6 +103,30 @@ defmodule Speck.Test do
     assert Speck.validate(TestSchema.WrongType, params) == expected
   end
 
+  test "can coerce a list of values" do
+    params = %{
+      "device_ids" => [1, 5, "8"]
+    }
+
+    assert Speck.validate(TestSchema.List, params) == {:ok, %TestSchema.List{
+      device_ids: [1, 5, 8]
+    }}
+  end
+
+  test "returns errors if a list can't be coerced" do
+    params = %{
+      "device_ids" => [-3, 0, 4, 19]
+    }
+
+    assert Speck.validate(TestSchema.List, params) == {:error, %{
+      device_ids: [
+        %{index: 0, reason: :less_than_min},
+        %{index: 1, reason: :less_than_min},
+        %{index: 3, reason: :greater_than_max}
+      ]
+    }}
+  end
+
   test "can coerce a list of maps" do
     params = %{
       "devices" => [
