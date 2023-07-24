@@ -152,3 +152,7 @@ Options:
   - error - `invalid_value`
 - `format` - Regular expression for the valid format of a string.
   - error - `wrong_format`
+
+### Examples
+
+Example schemas can be found in [/protocol](https://github.com/amclain/speck/tree/main/protocol).
