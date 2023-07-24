@@ -10,7 +10,7 @@ defmodule Speck.Test do
       # low_power_mode => not present
       "dns_servers"    => [
         "1.1.1.1",
-        "1.0.0.1"
+        "1.0.0.1",
       ],
       "metadata" => %{
         "location"   => "Warehouse 1",
@@ -21,70 +21,67 @@ defmodule Speck.Test do
       },
       "sensors" => [
         %{"type" => "temperature", "address" => 51},
-        %{"type" => "humidity",    "address" => 72}
+        %{"type" => "humidity",    "address" => 72},
       ]
     }
 
-    {:ok, device} = Speck.validate(MQTT.AddDevice.V1, params)
-
-    assert device == %MQTT.AddDevice.V1{
-      uuid:           "11111-22222-33333-44444-55555",
-      type:           :air_quality,
-      rs485_address:  5,
-      serial_number:  "DEVICE1234567890",
-      wifi_ssid:      nil,
-      low_power_mode: false,
-      dns_servers:    [
-        "1.1.1.1",
-        "1.0.0.1"
-      ],
-      metadata: %{
-        location:   "Warehouse 1",
-        department: "Logistics",
-        ports:      %{
-          rs485: 4
-        }
-      },
-      sensors: [
-        %{type: :temperature, address: 51},
-        %{type: :humidity,    address: 72},
-      ]
-    }
+    assert Speck.validate(MQTT.AddDevice.V1, params) ==
+      {:ok, %MQTT.AddDevice.V1{
+        uuid:           "11111-22222-33333-44444-55555",
+        type:           :air_quality,
+        rs485_address:  5,
+        serial_number:  "DEVICE1234567890",
+        wifi_ssid:      nil,
+        low_power_mode: false,
+        dns_servers:    [
+          "1.1.1.1",
+          "1.0.0.1",
+        ],
+        metadata: %{
+          location:   "Warehouse 1",
+          department: "Logistics",
+          ports:      %{
+            rs485: 4
+          }
+        },
+        sensors: [
+          %{type: :temperature, address: 51},
+          %{type: :humidity,    address: 72},
+        ]
+      }}
   end
 
   test "can have a default value" do
     params = %{}
 
-    {:ok, struct} = Speck.validate(TestSchema.Default, params)
-
-    assert struct == %TestSchema.Default{
-      param1: 2,
-      param2: 2.4,
-      param3: "foo",
-      param4: :foo,
-      param5: true
-    }
+    assert Speck.validate(TestSchema.Default, params) ==
+      {:ok, %TestSchema.Default{
+        param1: 2,
+        param2: 2.4,
+        param3: "foo",
+        param4: :foo,
+        param5: true,
+      }}
   end
 
   test "returns error if a required value isn't present" do
     params = %{}
 
-    expected = {:error, %{
-      uuid:          :not_present,
-      type:          :not_present,
-      rs485_address: :not_present,
-      serial_number: :not_present,
-      dns_servers:   :not_present,
-      metadata: %{
-        location:   :not_present,
-        department: :not_present,
-        ports: %{
-          rs485: :not_present
+    assert Speck.validate(MQTT.AddDevice.V1, params) ==
+      {:error, %{
+        uuid:          :not_present,
+        type:          :not_present,
+        rs485_address: :not_present,
+        serial_number: :not_present,
+        dns_servers:   :not_present,
+        metadata: %{
+          location:   :not_present,
+          department: :not_present,
+          ports: %{
+            rs485: :not_present,
+          }
         }
-      }
-    }}
-
-    assert Speck.validate(MQTT.AddDevice.V1, params) == expected
+      }}
   end
 
   test "returns error if value is the wrong type and can't be coerced" do
@@ -94,13 +91,12 @@ defmodule Speck.Test do
       "param3" => "invalid",
     }
 
-    expected = {:error, %{
-      param1: :wrong_type,
-      param2: :wrong_type,
-      param3: :wrong_type
-    }}
-
-    assert Speck.validate(TestSchema.WrongType, params) == expected
+    assert Speck.validate(TestSchema.WrongType, params) ==
+      {:error, %{
+        param1: :wrong_type,
+        param2: :wrong_type,
+        param3: :wrong_type,
+      }}
   end
 
   test "can coerce a list of values" do
@@ -108,9 +104,10 @@ defmodule Speck.Test do
       "device_ids" => [1, 5, "8"]
     }
 
-    assert Speck.validate(TestSchema.List, params) == {:ok, %TestSchema.List{
-      device_ids: [1, 5, 8]
-    }}
+    assert Speck.validate(TestSchema.List, params) ==
+      {:ok, %TestSchema.List{
+        device_ids: [1, 5, 8]
+      }}
   end
 
   test "returns errors if a list can't be coerced" do
@@ -118,13 +115,14 @@ defmodule Speck.Test do
       "device_ids" => [-3, 0, 4, 19]
     }
 
-    assert Speck.validate(TestSchema.List, params) == {:error, %{
-      device_ids: [
-        %{index: 0, reason: :less_than_min},
-        %{index: 1, reason: :less_than_min},
-        %{index: 3, reason: :greater_than_max}
-      ]
-    }}
+    assert Speck.validate(TestSchema.List, params) ==
+      {:error, %{
+        device_ids: [
+          %{index: 0, reason: :less_than_min},
+          %{index: 1, reason: :less_than_min},
+          %{index: 3, reason: :greater_than_max},
+        ]
+      }}
   end
 
   test "can coerce a list of maps" do
@@ -132,19 +130,18 @@ defmodule Speck.Test do
       "devices" => [
         %{"id" =>  1,  "type" => "valid"},
         %{"id" =>  2,  "type" => "valid"},
-        %{"id" => "3", "type" => "valid"}
+        %{"id" => "3", "type" => "valid"},
       ]
     }
 
-    expected = {:ok, %TestSchema.MapList{
-      devices: [
-        %{id: 1, type: "valid"},
-        %{id: 2, type: "valid"},
-        %{id: 3, type: "valid"}
-      ]
-    }}
-
-    assert Speck.validate(TestSchema.MapList, params) == expected
+    assert Speck.validate(TestSchema.MapList, params) ==
+      {:ok, %TestSchema.MapList{
+        devices: [
+          %{id: 1, type: "valid"},
+          %{id: 2, type: "valid"},
+          %{id: 3, type: "valid"},
+        ]
+      }}
   end
 
   test "returns errors if items in a list of maps can't be coerced" do
@@ -153,21 +150,20 @@ defmodule Speck.Test do
         %{"id" => 12345,     "type" => "valid"},
         %{"id" => "invalid", "type" => "invalid"},
         %{"id" => "invalid", "type" => "valid"},
-        %{}
+        %{},
       ]
     }
 
-    expected = {:error, %{
-      devices: [
-        %{index: 1, attribute: :id,   reason: :wrong_type},
-        %{index: 1, attribute: :type, reason: :invalid_value},
-        %{index: 2, attribute: :id,   reason: :wrong_type},
-        %{index: 3, attribute: :id,   reason: :not_present},
-        %{index: 3, attribute: :type, reason: :not_present}
-      ]
-    }}
-
-    assert Speck.validate(TestSchema.MapList, params) == expected
+    assert Speck.validate(TestSchema.MapList, params) ==
+      {:error, %{
+        devices: [
+          %{index: 1, attribute: :id,   reason: :wrong_type},
+          %{index: 1, attribute: :type, reason: :invalid_value},
+          %{index: 2, attribute: :id,   reason: :wrong_type},
+          %{index: 3, attribute: :id,   reason: :not_present},
+          %{index: 3, attribute: :type, reason: :not_present},
+        ]
+      }}
   end
 
   describe "min limit" do
@@ -175,14 +171,14 @@ defmodule Speck.Test do
       params = %{
         "param_integer" => 1,
         "param_float"   => 1.4,
-        "param_string"  => "ab"
+        "param_string"  => "ab",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
         {:ok, %TestSchema.MinMax{
           param_integer: 1,
           param_float:   1.4,
-          param_string:  "ab"
+          param_string:  "ab",
         }}
     end
 
@@ -190,14 +186,14 @@ defmodule Speck.Test do
       params = %{
         "param_integer" => 0,
         "param_float"   => -1.6,
-        "param_string"  => "a"
+        "param_string"  => "a",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
         {:error, %{
           param_integer: :less_than_min,
           param_float:   :less_than_min,
-          param_string:  :less_than_min
+          param_string:  :less_than_min,
         }}
     end
   end
@@ -207,14 +203,14 @@ defmodule Speck.Test do
       params = %{
         "param_integer" => 10,
         "param_float"   => 9.7,
-        "param_string"  => "abcdefgh"
+        "param_string"  => "abcdefgh",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
         {:ok, %TestSchema.MinMax{
           param_integer: 10,
           param_float:   9.7,
-          param_string:  "abcdefgh"
+          param_string:  "abcdefgh",
         }}
     end
 
@@ -222,14 +218,14 @@ defmodule Speck.Test do
       params = %{
         "param_integer" => 11,
         "param_float"   => 15.3,
-        "param_string"  => "ABCDEFGHIJK"
+        "param_string"  => "ABCDEFGHIJK",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
         {:error, %{
           param_integer: :greater_than_max,
           param_float:   :greater_than_max,
-          param_string:  :greater_than_max
+          param_string:  :greater_than_max,
         }}
     end
   end
@@ -270,7 +266,7 @@ defmodule Speck.Test do
     test "coerces params that are valid values" do
       params = %{
         "param_string" => "foo",
-        "param_atom"   => "bar"
+        "param_atom"   => "bar",
       }
 
       assert Speck.validate(TestSchema.ValidValues, params) ==
@@ -283,13 +279,13 @@ defmodule Speck.Test do
     test "returns an error if not in the list of valid values" do
       params = %{
         "param_string" => "invalid",
-        "param_atom"   => "invalid"
+        "param_atom"   => "invalid",
       }
 
       assert Speck.validate(TestSchema.ValidValues, params) ==
         {:error, %{
           param_string: :invalid_value,
-          param_atom:   :invalid_value
+          param_atom:   :invalid_value,
         }}
     end
   end

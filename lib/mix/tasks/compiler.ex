@@ -10,8 +10,8 @@ defmodule Mix.Tasks.Compile.Speck do
 
   @impl Mix.Task.Compiler
   def run(_args) do
-    files = Path.wildcard("#{@schema_path}/**/*.ex")
-    hashes = hashes(files)
+    files    = Path.wildcard("#{@schema_path}/**/*.ex")
+    hashes   = hashes(files)
     manifest = load_manifest()
 
     modified_files =
