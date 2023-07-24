@@ -110,3 +110,45 @@ attribute [:sensors], optional: true do
   attribute :address, :integer
 end
 ```
+
+## Schema syntax
+
+- `struct` - Name of the Elixir struct this schema will compile to.
+- `name` (optional) - Name of this message or event on the wire.
+- `attribute` - An attribute in the input payload. These could also be known as fields, properties, keys.
+
+### Attributes
+
+The top-level input payload is assumed to be a map, since this is common in many cases. If it is not in your case, transform the input into a map before validating it with Speck.
+
+Attributes consist of a name, type, and optional validation arguments:
+
+```text
+attribute <name>, <type>, <options>
+```
+
+Types:
+- `boolean`
+- `integer`
+- `float`
+- `string`
+- `atom`
+- `map`
+
+Lists:
+- Create a list of any type by wrapping the type in square brackets: `[string]`
+
+Options:
+- `default` - The default value is used if the value is not present in the input.
+- `optional` - Set `true` if a value for the attribute is not required.
+  - error - `not_present`
+- `min` - Minimum value for a number, or minimum length for a string.
+  - error - `less_than_min`
+- `max` - Maximum value for a number, or maximum length for a string.
+  - error - `greater_than_max`
+- `length` - Exact length for a string.
+  - error - `wrong_length`
+- `values` - List of valid values (an enum).
+  - error - `invalid_value`
+- `format` - Regular expression for the valid format of a string.
+  - error - `wrong_format`
