@@ -21,6 +21,14 @@ Add the Speck compiler to your `mix.exs` project config:
 compilers: Mix.compilers ++ [:speck]
 ```
 
+## Configuration
+
+Create schemas in the `protocol` directory at the root of your Elixir project. Schemas are compiled, and therefore should use the `.ex` extension. Schemas can be grouped into subfolders if your project interfaces with more than one transport. _Avoid_ putting your schemas in `lib`, as they use a different compiler than standard Elixir files. The schema directory can be changed in your project's mix config:
+
+```elixir
+config :speck, schema_path: "my_schemas"
+```
+
 ## Philosophy
 
 Speck is designed to be the validation layer for an application. The key here is "layer": Your application should employ a [layered architecture](https://www.oreilly.com/library/view/software-architecture-patterns/9781491971437/ch01.html) to use Speck effectively. Speck should sit between the external input and business logic layers. In an MVC framework this would be between the controller and model. The layers should have hard boundaries, meaning function calls can only happen sideways or to the layer directly below. Input and return values should pass through a transformation when crossing layer boundaries, preventing a layer from leaking through its neighbors.
