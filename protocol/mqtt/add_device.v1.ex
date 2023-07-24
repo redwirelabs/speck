@@ -1,9 +1,7 @@
 struct MQTT.AddDevice.V1
 
 name "add_device"
-# version 1
 
-@doc "Server's ID for the device"
 attribute :uuid,           :string,  format: ~r/\A\d{5}\-\d{5}\-\d{5}\-\d{5}\-\d{5}\z/
 attribute :type,           :atom,    values: [:temperature, :humidity, :air_quality]
 attribute :rs485_address,  :integer, min: 1, max: 255
