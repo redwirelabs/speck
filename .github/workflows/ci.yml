@@ -15,7 +15,7 @@ jobs:
           otp-version: "26.0.2"
           elixir-version: "1.15.4"
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Get dependencies
         run: mix deps.get --only test
       - name: Compile
@@ -33,7 +33,7 @@ jobs:
           otp-version: "26.0.2"
           elixir-version: "1.15.4"
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Get dependencies
         run: mix deps.get --only dev
       - name: Restore PLTs
