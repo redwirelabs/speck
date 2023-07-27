@@ -289,4 +289,38 @@ defmodule Speck.Test do
         }}
     end
   end
+
+  describe "presence" do
+    test "coerces params when all attributes are present" do
+      params = %{
+        "param1" => 1,
+        "param2" => 1.2,
+        "param3" => "foo",
+        "param4" => :bar,
+        "param5" => false
+      }
+
+      assert Speck.validate(TestSchema.Presence, params) ==
+        {:ok, %TestSchema.Presence{
+          param1: 1,
+          param2: 1.2,
+          param3: "foo",
+          param4: :bar,
+          param5: false
+        }}
+    end
+  end
+
+  test "returns an error if attributes are missing" do
+    params = %{}
+
+    assert Speck.validate(TestSchema.Presence, params) ==
+      {:error, %{
+        param1: :not_present,
+        param2: :not_present,
+        param3: :not_present,
+        param4: :not_present,
+        param5: :not_present
+      }}
+  end
 end

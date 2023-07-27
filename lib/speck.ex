@@ -9,7 +9,7 @@ defmodule Speck do
   @spec validate(schema :: module, params :: map) :: {:ok, struct}, {:error, map}
   def validate(schema, params) do
     case do_validate(:map, params, [], schema.attributes) do
-      {fields, errors} when errors == %{} -> 
+      {fields, errors} when errors == %{} ->
         struct = struct(schema, fields)
         {:ok, struct}
 
@@ -96,7 +96,7 @@ defmodule Speck do
   defp do_validate(:map, value, _opts, attributes) do
     Enum.reduce(attributes, {%{}, %{}}, fn
       {name, [:map], opts, attributes}, {fields, errors} ->
-        raw_values = value[to_string(name)] || value[name] || []
+        raw_values = get_raw_value(value, name) || []
 
         coerced_maplist =
           raw_values
@@ -125,14 +125,14 @@ defmodule Speck do
 
           {value, error} ->
             {Map.put(fields, name, value), Map.put(errors, name, error)}
-        end        
+        end
 
       {name, :map, opts, attributes}, {fields, errors} ->
-        raw_value = value[to_string(name)] || value[name]
+        raw_value = get_raw_value(value, name)
         apply_filters(name, :map, raw_value, opts, fields, errors, attributes)
 
       {name, type, opts}, {fields, errors} ->
-        raw_value = value[to_string(name)] || value[name]
+        raw_value = get_raw_value(value, name)
         apply_filters(name, type, raw_value, opts, fields, errors, nil)
     end)
   end
@@ -223,5 +223,14 @@ defmodule Speck do
 
   defp apply_valid_values({value, error}, _valid_values) do
     {value, error}
+  end
+
+  defp get_raw_value(map, key) do
+    raw_value = map[to_string(key)]
+
+    case raw_value do
+      nil -> map[key]
+      _ -> raw_value
+    end
   end
 end

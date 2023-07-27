@@ -1,6 +1,6 @@
-struct TestSchema.NotPresent
+struct TestSchema.Presence
 
-name "not_present"
+name "presence"
 
 attribute :param1, :integer
 attribute :param2, :float
