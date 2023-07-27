@@ -166,6 +166,36 @@ defmodule Speck.Test do
       }}
   end
 
+  test "returns an error if attributes are not present" do
+    params = %{}
+
+    assert Speck.validate(TestSchema.NotPresent, params) ==
+      {:error, %{
+        param1: :not_present,
+        param2: :not_present,
+        param3: :not_present,
+        param4: :not_present,
+        param5: :not_present,
+      }}
+  end
+
+  test "falsy values coerce successfully" do
+    params = %{
+      "param1" => false,
+      "param2" => "",
+      "param3" => 0,
+      "param4" => [false, false, false],
+    }
+
+    assert Speck.validate(TestSchema.FalsyValues, params) ==
+      {:ok, %TestSchema.FalsyValues{
+        param1: false,
+        param2: "",
+        param3: 0,
+        param4: [false, false, false],
+      }}
+  end
+
   describe "min limit" do
     test "coerces params that meet the min limit" do
       params = %{
@@ -288,39 +318,5 @@ defmodule Speck.Test do
           param_atom:   :invalid_value,
         }}
     end
-  end
-
-  describe "presence" do
-    test "coerces params when all attributes are present" do
-      params = %{
-        "param1" => 1,
-        "param2" => 1.2,
-        "param3" => "foo",
-        "param4" => :bar,
-        "param5" => false
-      }
-
-      assert Speck.validate(TestSchema.Presence, params) ==
-        {:ok, %TestSchema.Presence{
-          param1: 1,
-          param2: 1.2,
-          param3: "foo",
-          param4: :bar,
-          param5: false
-        }}
-    end
-  end
-
-  test "returns an error if attributes are missing" do
-    params = %{}
-
-    assert Speck.validate(TestSchema.Presence, params) ==
-      {:error, %{
-        param1: :not_present,
-        param2: :not_present,
-        param3: :not_present,
-        param4: :not_present,
-        param5: :not_present
-      }}
   end
 end
