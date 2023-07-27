@@ -230,7 +230,7 @@ defmodule Speck do
 
     case raw_value do
       nil -> map[key]
-      _ -> raw_value
+      _   -> raw_value
     end
   end
 end
