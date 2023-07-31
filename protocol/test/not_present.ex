@@ -9,3 +9,4 @@ attribute :param4, :atom
 attribute :param5, :boolean
 attribute :param6, :datetime
 attribute :param7, :date
+attribute :param8, :time

@@ -113,28 +113,17 @@ defmodule Mix.Tasks.Compile.Speck do
     {name, type, []}
   end
 
-  defp build_attribute({:attribute, _, [name, :date = type, opts_ast]}) do
-    {opts, _} = Code.eval_quoted(opts_ast)
+  defp build_attribute({:attribute, _, [name, type, opts_ast]})
+    when type in [:date, :time, :datetime] do
+      {opts, _} = Code.eval_quoted(opts_ast)
 
-    opts =
-      opts
-      |> maybe_coerce_opt(:min, :date)
-      |> maybe_coerce_opt(:max, :date)
-      |> maybe_coerce_opt(:default, :date)
+      opts =
+        opts
+        |> maybe_coerce_opt(:min, type)
+        |> maybe_coerce_opt(:max, type)
+        |> maybe_coerce_opt(:default, type)
 
-    {name, type, opts}
-  end
-
-  defp build_attribute({:attribute, _, [name, :datetime = type, opts_ast]}) do
-    {opts, _} = Code.eval_quoted(opts_ast)
-
-    opts =
-      opts
-      |> maybe_coerce_opt(:min, :datetime)
-      |> maybe_coerce_opt(:max, :datetime)
-      |> maybe_coerce_opt(:default, :datetime)
-
-    {name, type, opts}
+      {name, type, opts}
   end
 
   defp build_attribute({:attribute, _, [name, type, opts_ast]}) do
@@ -183,6 +172,18 @@ defmodule Mix.Tasks.Compile.Speck do
   end
 
   defp coerce(:date, %Date{} = value) do
+    value
+  end
+
+  defp coerce(:time, value) when is_binary(value) do
+    case Time.from_iso8601(value) do
+      {:ok, time}               -> time
+      {:error, :invalid_format} -> {:error, :wrong_format}
+      error                     -> error
+    end
+  end
+
+  defp coerce(:time, %Time{} = value) do
     value
   end
 

@@ -135,6 +135,7 @@ Types:
 - `string`
 - `atom`
 - `date` (ISO 8601)
+- `time` (ISO 8601)
 - `datetime` (ISO 8601)
 - `map`
 
