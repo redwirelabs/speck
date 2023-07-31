@@ -113,9 +113,27 @@ defmodule Mix.Tasks.Compile.Speck do
     {name, type, []}
   end
 
+  defp build_attribute({:attribute, _, [name, :datetime = type, opts_ast]}) do
+    {opts, _} = Code.eval_quoted(opts_ast)
+
+    opts =
+      opts
+      |> maybe_coerce_opt(:min, :datetime)
+      |> maybe_coerce_opt(:max, :datetime)
+      |> maybe_coerce_opt(:default, :datetime)
+
+    {name, type, opts}
+  end
+
   defp build_attribute({:attribute, _, [name, type, opts_ast]}) do
     {opts, _} = Code.eval_quoted(opts_ast)
     {name, type, opts}
+  end
+
+  defp maybe_coerce_opt(opts, key, type) do
+    if is_nil(opts[key]),
+      do:   opts,
+      else: Keyword.put(opts, key, coerce(type, opts[key]))
   end
 
   defp hashes(files) when is_list(files) do
@@ -142,5 +160,36 @@ defmodule Mix.Tasks.Compile.Speck do
 
   defp save_manifest(hashes) do
     File.write!(@manifest_path, :erlang.term_to_binary(hashes))
+  end
+
+  defp coerce(:datetime, value) when is_binary(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, datetime, _offset} ->
+        datetime
+
+      {:error, :missing_offset} ->
+        case NaiveDateTime.from_iso8601(value) do
+          {:ok, datetime} -> datetime
+          error           -> error
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp coerce(:datetime, value) when is_integer(value) do
+    case DateTime.from_unix(value) do
+      {:ok, datetime} -> datetime
+      error           -> error
+    end
+  end
+
+  defp coerce(:datetime, %DateTime{} = value) do
+    value
+  end
+
+  defp coerce(:datetime, %NaiveDateTime{} = value) do
+    value
   end
 end

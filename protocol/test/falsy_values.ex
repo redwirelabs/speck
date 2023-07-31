@@ -6,3 +6,4 @@ attribute :param1, :boolean
 attribute :param2, :string
 attribute :param3, :integer
 attribute :param4, [:boolean]
+attribute :param5, :datetime
