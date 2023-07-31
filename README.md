@@ -134,6 +134,7 @@ Types:
 - `float`
 - `string`
 - `atom`
+- `date` (ISO 8601)
 - `datetime` (ISO 8601)
 - `map`
 

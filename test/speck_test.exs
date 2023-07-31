@@ -64,6 +64,7 @@ defmodule Speck.Test do
         param4: :foo,
         param5: true,
         param6: ~U[2023-05-15 01:02:03Z],
+        param7: ~D[2023-05-15],
       }}
   end
 
@@ -94,6 +95,7 @@ defmodule Speck.Test do
       "param2" => "invalid",
       "param3" => "invalid",
       "param4" => 2.7,
+      "param5" => 2.7,
     }
 
     assert Speck.validate(TestSchema.WrongType, params) ==
@@ -102,6 +104,7 @@ defmodule Speck.Test do
         param2: :wrong_type,
         param3: :wrong_type,
         param4: :wrong_type,
+        param5: :wrong_type,
       }}
   end
 
@@ -183,6 +186,7 @@ defmodule Speck.Test do
         param4: :not_present,
         param5: :not_present,
         param6: :not_present,
+        param7: :not_present,
       }}
   end
 
@@ -280,6 +284,39 @@ defmodule Speck.Test do
     end
   end
 
+  describe "date" do
+    test "can parse ISO 8601" do
+      params = %{
+        "param1" => "2023-05-15"
+      }
+
+      assert Speck.validate(TestSchema.Date, params) ==
+        {:ok, %TestSchema.Date{
+          param1: ~D[2023-05-15]
+        }}
+    end
+
+    test "passes through Date struct" do
+      params = %{
+        "param1" => ~D[2023-05-15]
+      }
+
+      assert Speck.validate(TestSchema.Date, params) ==
+        {:ok, %TestSchema.Date{
+          param1: ~D[2023-05-15]
+        }}
+    end
+
+    test "returns an error if the value can't be parsed" do
+      params = %{
+        "param1" => "invalid"
+      }
+
+      assert Speck.validate(TestSchema.Date, params) ==
+        {:error, %{param1: :wrong_format}}
+    end
+  end
+
   describe "min limit" do
     test "coerces params that meet the min limit" do
       params = %{
@@ -287,6 +324,7 @@ defmodule Speck.Test do
         "param_float"    => 1.4,
         "param_string"   => "ab",
         "param_datetime" => "2023-05-15 00:00:00",
+        "param_date"     => "2023-05-15",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
@@ -295,6 +333,7 @@ defmodule Speck.Test do
           param_float:    1.4,
           param_string:   "ab",
           param_datetime: ~N[2023-05-15 00:00:00],
+          param_date:     ~D[2023-05-15],
         }}
     end
 
@@ -304,6 +343,7 @@ defmodule Speck.Test do
         "param_float"    => -1.6,
         "param_string"   => "a",
         "param_datetime" => "1970-01-01 00:00:00",
+        "param_date"     => "1970-01-01",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
@@ -312,6 +352,7 @@ defmodule Speck.Test do
           param_float:    :less_than_min,
           param_string:   :less_than_min,
           param_datetime: :less_than_min,
+          param_date:     :less_than_min,
         }}
     end
   end
@@ -323,6 +364,7 @@ defmodule Speck.Test do
         "param_float"    => 9.7,
         "param_string"   => "abcdefgh",
         "param_datetime" => "2023-05-15 00:00:00",
+        "param_date"     => "2023-05-15",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
@@ -331,6 +373,7 @@ defmodule Speck.Test do
           param_float:    9.7,
           param_string:   "abcdefgh",
           param_datetime: ~N[2023-05-15 00:00:00],
+          param_date:     ~D[2023-05-15],
         }}
     end
 
@@ -340,6 +383,7 @@ defmodule Speck.Test do
         "param_float"    => 15.3,
         "param_string"   => "ABCDEFGHIJK",
         "param_datetime" => "2050-01-01 00:00:00",
+        "param_date"     => "2050-01-01",
       }
 
       assert Speck.validate(TestSchema.MinMax, params) ==
@@ -348,6 +392,7 @@ defmodule Speck.Test do
           param_float:    :greater_than_max,
           param_string:   :greater_than_max,
           param_datetime: :greater_than_max,
+          param_date:     :greater_than_max,
         }}
     end
   end

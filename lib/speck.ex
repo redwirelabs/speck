@@ -162,6 +162,18 @@ defmodule Speck do
   defp do_validate(:atom, value, _opts) when is_binary(value), do: String.to_atom(value)
   defp do_validate(:atom, value, _opts) when is_atom(value), do: value
 
+  defp do_validate(:date, value, _opts) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date}               -> date
+      {:error, :invalid_format} -> {:error, :wrong_format}
+      error                     -> error
+    end
+  end
+
+  defp do_validate(:date, %Date{} = value, _opts) do
+    value
+  end
+
   defp do_validate(:datetime, value, _opts) when is_binary(value) do
     case DateTime.from_iso8601(value) do
       {:ok, datetime, _offset} ->
@@ -205,12 +217,14 @@ defmodule Speck do
         _ when is_float(value)   -> value
         _ when is_integer(value) -> value
         _ when is_binary(value)  -> String.length(value)
+        %Date{}                  -> value
         %DateTime{}              -> value
         %NaiveDateTime{}         -> value
       end
 
     error? =
       case v do
+        %Date{}          -> Date.compare(v, limit) == :lt
         %DateTime{}      -> DateTime.compare(v, limit) == :lt
         %NaiveDateTime{} -> NaiveDateTime.compare(v, limit) == :lt
         _                -> v < limit
@@ -231,12 +245,14 @@ defmodule Speck do
         _ when is_float(value)   -> value
         _ when is_integer(value) -> value
         _ when is_binary(value)  -> String.length(value)
+        %Date{}                  -> value
         %DateTime{}              -> value
         %NaiveDateTime{}         -> value
       end
 
     error? =
       case v do
+        %Date{}          -> Date.compare(v, limit) == :gt
         %DateTime{}      -> DateTime.compare(v, limit) == :gt
         %NaiveDateTime{} -> NaiveDateTime.compare(v, limit) == :gt
         _                -> v > limit

@@ -113,6 +113,18 @@ defmodule Mix.Tasks.Compile.Speck do
     {name, type, []}
   end
 
+  defp build_attribute({:attribute, _, [name, :date = type, opts_ast]}) do
+    {opts, _} = Code.eval_quoted(opts_ast)
+
+    opts =
+      opts
+      |> maybe_coerce_opt(:min, :date)
+      |> maybe_coerce_opt(:max, :date)
+      |> maybe_coerce_opt(:default, :date)
+
+    {name, type, opts}
+  end
+
   defp build_attribute({:attribute, _, [name, :datetime = type, opts_ast]}) do
     {opts, _} = Code.eval_quoted(opts_ast)
 
@@ -160,6 +172,18 @@ defmodule Mix.Tasks.Compile.Speck do
 
   defp save_manifest(hashes) do
     File.write!(@manifest_path, :erlang.term_to_binary(hashes))
+  end
+
+  defp coerce(:date, value) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date}               -> date
+      {:error, :invalid_format} -> {:error, :wrong_format}
+      error                     -> error
+    end
+  end
+
+  defp coerce(:date, %Date{} = value) do
+    value
   end
 
   defp coerce(:datetime, value) when is_binary(value) do

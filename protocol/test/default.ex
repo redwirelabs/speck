@@ -8,3 +8,4 @@ attribute :param3, :string,   default: "foo"
 attribute :param4, :atom,     default: :foo
 attribute :param5, :boolean,  default: true
 attribute :param6, :datetime, default: ~U[2023-05-15 01:02:03Z]
+attribute :param7, :date,     default: ~D[2023-05-15]
