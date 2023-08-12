@@ -113,9 +113,28 @@ defmodule Mix.Tasks.Compile.Speck do
     {name, type, []}
   end
 
+  defp build_attribute({:attribute, _, [name, type, opts_ast]})
+    when type in [:date, :time, :datetime] do
+      {opts, _} = Code.eval_quoted(opts_ast)
+
+      opts =
+        opts
+        |> maybe_coerce_opt(:min, type)
+        |> maybe_coerce_opt(:max, type)
+        |> maybe_coerce_opt(:default, type)
+
+      {name, type, opts}
+  end
+
   defp build_attribute({:attribute, _, [name, type, opts_ast]}) do
     {opts, _} = Code.eval_quoted(opts_ast)
     {name, type, opts}
+  end
+
+  defp maybe_coerce_opt(opts, key, type) do
+    if is_nil(opts[key]),
+      do:   opts,
+      else: Keyword.put(opts, key, coerce(type, opts[key]))
   end
 
   defp hashes(files) when is_list(files) do
@@ -142,5 +161,60 @@ defmodule Mix.Tasks.Compile.Speck do
 
   defp save_manifest(hashes) do
     File.write!(@manifest_path, :erlang.term_to_binary(hashes))
+  end
+
+  defp coerce(:date, value) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date}               -> date
+      {:error, :invalid_format} -> {:error, :wrong_format}
+      error                     -> error
+    end
+  end
+
+  defp coerce(:date, %Date{} = value) do
+    value
+  end
+
+  defp coerce(:time, value) when is_binary(value) do
+    case Time.from_iso8601(value) do
+      {:ok, time}               -> time
+      {:error, :invalid_format} -> {:error, :wrong_format}
+      error                     -> error
+    end
+  end
+
+  defp coerce(:time, %Time{} = value) do
+    value
+  end
+
+  defp coerce(:datetime, value) when is_binary(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, datetime, _offset} ->
+        datetime
+
+      {:error, :missing_offset} ->
+        case NaiveDateTime.from_iso8601(value) do
+          {:ok, datetime} -> datetime
+          error           -> error
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp coerce(:datetime, value) when is_integer(value) do
+    case DateTime.from_unix(value) do
+      {:ok, datetime} -> datetime
+      error           -> error
+    end
+  end
+
+  defp coerce(:datetime, %DateTime{} = value) do
+    value
+  end
+
+  defp coerce(:datetime, %NaiveDateTime{} = value) do
+    value
   end
 end
