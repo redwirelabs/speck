@@ -18,7 +18,7 @@ end
 Add the Speck compiler to your `mix.exs` project config:
 
 ```elixir
-compilers: Mix.compilers ++ [:speck]
+compilers: [:speck] ++ Mix.compilers
 ```
 
 ## Configuration
