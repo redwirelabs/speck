@@ -5,12 +5,10 @@ defmodule Mix.Tasks.Compile.Speck do
 
   use Mix.Task.Compiler
 
-  @schema_path Application.compile_env(:speck, :schema_path, "protocol")
-  @manifest_path Path.join(Mix.Project.app_path, "speck.manifest")
-
   @impl Mix.Task.Compiler
   def run(_args) do
-    schema_files = Path.wildcard("#{@schema_path}/**/*.ex")
+    schema_path  = Application.get_env(:speck, :schema_path, "protocol")
+    schema_files = Path.wildcard("#{schema_path}/**/*.ex")
     hashes       = hashes(schema_files)
     manifest     = load_manifest()
 
@@ -90,12 +88,16 @@ defmodule Mix.Tasks.Compile.Speck do
 
   @impl Mix.Task.Compiler
   def manifests do
-    [@manifest_path]
+    [manifest_path()]
   end
 
   @impl Mix.Task.Compiler
   def clean do
-    File.rm_rf(@manifest_path)
+    File.rm_rf(manifest_path())
+  end
+
+  defp manifest_path do
+    Path.join(Mix.Project.app_path, "speck.manifest")
   end
 
   defp module_path(module) do
@@ -206,7 +208,7 @@ defmodule Mix.Tasks.Compile.Speck do
   end
 
   defp load_manifest do
-    case File.read(@manifest_path) do
+    case File.read(manifest_path()) do
       {:ok, contents} -> :erlang.binary_to_term(contents)
       {:error, :enoent} -> []
       {:error, reason} -> raise "Failed to load manifest: #{reason}"
@@ -214,7 +216,7 @@ defmodule Mix.Tasks.Compile.Speck do
   end
 
   defp save_manifest(manifest) do
-    File.write!(@manifest_path, :erlang.term_to_binary(manifest))
+    File.write!(manifest_path(), :erlang.term_to_binary(manifest))
   end
 
   defp coerce(:date, value) when is_binary(value) do
