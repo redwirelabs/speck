@@ -10,30 +10,80 @@ defmodule Mix.Tasks.Compile.Speck do
 
   @impl Mix.Task.Compiler
   def run(_args) do
-    files    = Path.wildcard("#{@schema_path}/**/*.ex")
-    hashes   = hashes(files)
-    manifest = load_manifest()
+    schema_files = Path.wildcard("#{@schema_path}/**/*.ex")
+    hashes       = hashes(schema_files)
+    manifest     = load_manifest()
 
     modified_files =
-      hashes
-      |> Enum.reject(&Enum.member?(manifest, &1))
-      |> Enum.map(fn {_hash, file} -> file end)
+      hashes -- Enum.map(manifest, fn {hash, schema_file, _module} -> {hash, schema_file} end)
 
-    Enum.each(modified_files, fn file ->
-      Mix.Shell.IO.info "Compiling #{file}"
+    compiled_files =
+      Enum.map(modified_files, fn {_hash, schema_file} ->
+        Mix.Shell.IO.info "Compiling #{schema_file}"
 
-      compile(file)
-      |> Enum.each(fn {module, bytecode} ->
-        path = Path.join([Mix.Project.app_path, "ebin", "#{module}.beam"])
+        schema_file
+        |> compile()
+        |> Enum.map(fn {module, bytecode} ->
+          module_path = module_path(module)
 
-        File.mkdir_p(Path.dirname(path))
-        File.write(path, bytecode)
+          File.mkdir_p(Path.dirname(module_path))
+          File.write!(module_path, bytecode)
+
+          new_hash = hash(schema_file)
+
+          {new_hash, schema_file, module}
+        end)
       end)
-    end)
+      |> List.flatten
 
-    files
-    |> hashes()
-    |> save_manifest()    
+    removed_files =
+      Enum.map(manifest, fn {_hash, schema_file, _module} -> schema_file end) -- schema_files
+
+    new_manifest =
+      manifest
+      |> Enum.reject(fn {_hash, schema_file, _module} ->
+        Enum.member?(removed_files, schema_file)
+      end)
+      |> Enum.reject(fn {_hash, schema_file, _module} ->
+        Enum.find(modified_files, fn {_h, sf} -> schema_file == sf end)
+      end)
+      |> Enum.concat(compiled_files)
+
+    save_manifest(new_manifest)
+
+    # BEAM file cleanup scenarios to check for when modifying this code:
+    #
+    # - Deleting a schema should delete the corresponding BEAM file.
+    #
+    #   Delete protocol/test/date.ex and make sure
+    #   _build/dev/lib/speck/ebin/Elixir.TestSchema.Date.beam is removed
+    #   by the compiler.
+    #
+    # - Renaming a schema's struct should delete the BEAM file for the
+    #   struct's old name and create a BEAM file with the new name.
+    #
+    #   Open protocol/test/date.ex and change the struct name to
+    #   TestSchema.Date.V2. Check in _build/dev/lib/speck/ebin that
+    #   Elixir.TestSchema.Date.beam has been removed and
+    #   Elixir.TestSchema.Date.V2.beam has been created.
+    #
+    # - Deleting a schema and then renaming another schema's struct to the
+    #   deleted one should remove the renamed schema's old BEAM file.
+    #
+    #   Delete protocol/test/date.ex. Open protocol/test/datetime.ex and rename
+    #   the struct to TestSchema.Date. Check in _build/dev/lib/speck/ebin that
+    #   Elixir.TestSchema.DateTime.beam has been removed and that
+    #   Elixir.TestSchema.Date.beam was recompiled.
+
+    files_to_clean =
+      (manifest -- new_manifest)
+      |> Enum.reject(fn {_hash, _schema_file, module} ->
+        Enum.find(compiled_files, fn {_h, _sf, m} -> module == m end)
+      end)
+
+    Enum.each(files_to_clean, fn {_hash, _schema_file, module} ->
+      File.rm(module_path(module))
+    end)
 
     :ok
   end
@@ -46,6 +96,10 @@ defmodule Mix.Tasks.Compile.Speck do
   @impl Mix.Task.Compiler
   def clean do
     File.rm_rf(@manifest_path)
+  end
+
+  defp module_path(module) do
+    Path.join([Mix.Project.app_path, "ebin", "#{module}.beam"])
   end
 
   defp compile(file) do
@@ -159,8 +213,8 @@ defmodule Mix.Tasks.Compile.Speck do
     end
   end
 
-  defp save_manifest(hashes) do
-    File.write!(@manifest_path, :erlang.term_to_binary(hashes))
+  defp save_manifest(manifest) do
+    File.write!(@manifest_path, :erlang.term_to_binary(manifest))
   end
 
   defp coerce(:date, value) when is_binary(value) do
