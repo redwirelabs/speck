@@ -4,7 +4,7 @@ defmodule Speck.MixProject do
   def project do
     [
       app: :speck,
-      version: "0.2.0",
+      version: "1.0.0",
       elixir: "~> 1.14",
       start_permanent: Mix.env == :prod,
       compilers: Mix.compilers ++ [:speck],
@@ -60,7 +60,7 @@ defmodule Speck.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/amclain/speck"},
+      links: %{"GitHub" => "https://github.com/redwirelabs/speck"},
       maintainers: ["Alex McLain"],
       files: [
         "lib",
