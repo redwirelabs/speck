@@ -137,7 +137,26 @@ defmodule Speck.Test do
       }}
   end
 
-  test "can coerce a list of maps" do
+  test "can coerce a list of maps with a single attribute" do
+    params = %{
+      "devices" => [
+        %{"type" => "imx6"},
+        %{"type" => "imx8"},
+        %{"type" => "am62"},
+      ]
+    }
+
+    assert Speck.validate(TestSchema.MapListSingleAttribute, params) ==
+      {:ok, %TestSchema.MapListSingleAttribute{
+        devices: [
+          %{type: "imx6"},
+          %{type: "imx8"},
+          %{type: "am62"},
+        ]
+      }}
+  end
+
+  test "can coerce a list of maps with multiple attributes" do
     params = %{
       "devices" => [
         %{"id" =>  1,  "type" => "valid"},
