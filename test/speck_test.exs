@@ -98,6 +98,8 @@ defmodule Speck.Test do
       "param4" => 2.7,
       "param5" => 2.7,
       "param6" => 2.7,
+      "param7" => %{},
+      "param8" => {:type, :ipv4}
     }
 
     assert Speck.validate(TestSchema.WrongType, params) ==
@@ -108,6 +110,8 @@ defmodule Speck.Test do
         param4: :wrong_type,
         param5: :wrong_type,
         param6: :wrong_type,
+        param7: :wrong_type,
+        param8: :wrong_type,
       }}
   end
 

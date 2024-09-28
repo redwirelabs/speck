@@ -71,7 +71,15 @@ defmodule Speck do
         end
 
       true ->
-        case do_validate(type, raw_value, opts) do
+        strict_validation = opts[:strict]
+
+        validate_fn =
+          case strict_validation do
+            true -> &do_strict_validate/3
+            _ -> &do_validate/3
+          end
+
+        case validate_fn.(type, raw_value, opts) do
           {:error, error} ->
             {fields, Map.put(errors, name, error)}
 
@@ -92,6 +100,16 @@ defmodule Speck do
         end
     end
   end
+
+  defp do_strict_validate(:boolean, value, _opts) when is_boolean(value), do: value
+  defp do_strict_validate(:integer, value, _opts) when is_integer(value), do: value
+  defp do_strict_validate(:float, value, _opts) when is_float(value), do: value
+  defp do_strict_validate(:string, value, _opts) when is_binary(value), do: value
+  defp do_strict_validate(:atom, value, _opts) when is_atom(value), do: value
+  defp do_strict_validate(:date, %Date{} = value, _opts), do: value
+  defp do_strict_validate(:time, %Time{} = value, _opts), do: value
+  defp do_strict_validate(:datetime, %DateTime{} = value, _opts), do: value
+  defp do_strict_validate(_type, _value, _opts), do: {:error, :wrong_type}
 
   defp do_validate(:map, value, _opts, attributes) do
     Enum.reduce(attributes, {%{}, %{}}, fn
@@ -157,6 +175,9 @@ defmodule Speck do
     end
   end
 
+  defp do_validate(:string, value, _opts) when is_map(value), do: {:error, :wrong_type}
+  defp do_validate(:string, value, _opts) when is_tuple(value), do: {:error, :wrong_type}
+  defp do_validate(:string, value, _opts) when is_pid(value), do: {:error, :wrong_type}
   defp do_validate(:string, value, _opts), do: to_string(value)
 
   defp do_validate(:atom, value, _opts) when is_binary(value), do: String.to_atom(value)
@@ -310,12 +331,6 @@ defmodule Speck do
     {value, error}
   end
 
-  defp get_raw_value(map, key) do
-    raw_value = map[to_string(key)]
-
-    case raw_value do
-      nil -> map[key]
-      _   -> raw_value
-    end
-  end
+  defp get_raw_value(map, key) when is_map_key(map, key), do: map[key]
+  defp get_raw_value(map, key), do: map[to_string(key)]
 end
