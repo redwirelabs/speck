@@ -8,7 +8,9 @@ defmodule Speck do
   """
   @spec validate(schema :: module, params :: map) :: {:ok, struct}, {:error, map}
   def validate(schema, params) do
-    case do_validate(:map, params, [], schema.attributes) do
+    opts = [strict: schema.strict]
+
+    case do_validate(:map, params, opts, schema.attributes) do
       {fields, errors} when errors == %{} ->
         struct = struct(schema, fields)
         {:ok, struct}
@@ -111,14 +113,15 @@ defmodule Speck do
   defp do_strict_validate(:datetime, %DateTime{} = value, _opts), do: value
   defp do_strict_validate(_type, _value, _opts), do: {:error, :wrong_type}
 
-  defp do_validate(:map, value, _opts, attributes) do
+  defp do_validate(:map, value, global_opts, attributes) do
     Enum.reduce(attributes, {%{}, %{}}, fn
       {name, [:map], opts, attributes}, {fields, errors} ->
-        raw_values = get_raw_value(value, name) || []
+        merged_opts = Keyword.merge(global_opts, opts)
+        raw_values  = get_raw_value(value, name) || []
 
         coerced_maplist =
           raw_values
-          |> Enum.map(&do_validate(:map, &1, opts, attributes))
+          |> Enum.map(&do_validate(:map, &1, merged_opts, attributes))
           |> Enum.with_index
           |> Enum.reduce({_values = [], _errors = []}, fn
             {{value, error}, _index}, {values, errors}
@@ -146,12 +149,16 @@ defmodule Speck do
         end
 
       {name, :map, opts, attributes}, {fields, errors} ->
-        raw_value = get_raw_value(value, name)
-        apply_filters(name, :map, raw_value, opts, fields, errors, attributes)
+        merged_opts = Keyword.merge(global_opts, opts)
+        raw_value   = get_raw_value(value, name)
+
+        apply_filters(name, :map, raw_value, merged_opts, fields, errors, attributes)
 
       {name, type, opts}, {fields, errors} ->
-        raw_value = get_raw_value(value, name)
-        apply_filters(name, type, raw_value, opts, fields, errors, nil)
+        merged_opts = Keyword.merge(global_opts, opts)
+        raw_value   = get_raw_value(value, name)
+
+        apply_filters(name, type, raw_value, merged_opts, fields, errors, nil)
     end)
   end
 

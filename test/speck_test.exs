@@ -217,6 +217,59 @@ defmodule Speck.Test do
       }}
   end
 
+    test "can coerce a struct when values pass strict validation" do
+      params = %{
+        "param1" => 1,
+        "param2" => 2.0,
+        "param3" => true,
+        "param4" => "valid",
+        "param5" => 1,
+        "param6" => :valid,
+        "param7" => ~U[1970-01-01 00:00:00Z],
+        "param8" => ~D[1970-01-01],
+        "param9" => ~T[00:00:00],
+      }
+
+      assert Speck.validate(TestSchema.Strict, params) ==
+        {:ok, %TestSchema.Strict{
+          param1: 1,
+          param2: 2.0,
+          param3: true,
+          param4: "valid",
+          param5: "1",
+          param6: :valid,
+          param7: ~U[1970-01-01 00:00:00Z],
+          param8: ~D[1970-01-01],
+          param9: ~T[00:00:00],
+        }}
+    end
+
+  test "returns error if strict value is the wrong type" do
+    params = %{
+      "param1" => "invalid",
+      "param2" => "invalid",
+      "param3" => "invalid",
+      "param4" => 2.7,
+      "param5" => 2.7,
+      "param6" => 2.7,
+      "param7" => 2.7,
+      "param8" => %{},
+      "param9" => {:type, :ipv4}
+    }
+
+    assert Speck.validate(TestSchema.Strict, params) ==
+      {:error, %{
+        param1: :wrong_type,
+        param2: :wrong_type,
+        param3: :wrong_type,
+        param4: :wrong_type,
+        param6: :wrong_type,
+        param7: :wrong_type,
+        param8: :wrong_type,
+        param9: :wrong_type,
+      }}
+  end
+
   test "falsy values coerce successfully" do
     params = %{
       "param1" => false,
