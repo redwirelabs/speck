@@ -102,7 +102,7 @@ attribute :metadata do
   attribute :commissioned_at, :datetime
 
   attribute :ports do
-    attribute :rs485, :integer
+    attribute :rs485, :integer, strict: true
   end
 end
 
@@ -116,6 +116,7 @@ end
 
 - `struct` - Name of the Elixir struct this schema will compile to.
 - `name` (optional) - Name of this message or event on the wire.
+- `strict` (optional) - Set `true` if enforcing value type for all attributes.
 - `attribute` - An attribute in the input payload. These could also be known as fields, properties, keys.
 
 ### Attributes
@@ -143,6 +144,8 @@ Lists:
 - Create a list of any type by wrapping the type in square brackets: `[string]`
 
 Options:
+- `strict` - Set `true` if enforcing value type instead of best attempt to coerce.
+  - error - `wrong_type`
 - `default` - The default value is used if the value is not present in the input.
 - `optional` - Set `true` if a value for the attribute is not required.
   - error - `not_present`
