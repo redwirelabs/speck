@@ -163,3 +163,41 @@ Options:
 ### Examples
 
 Example schemas can be found in [/protocol](https://github.com/amclain/speck/tree/main/protocol).
+
+## Order of operations
+
+Speck is designed to allow developers to focus on the data coming out of Speck rather than going into Speck. Therefore, its default behavior is to attempt to coerce a value to the attribute's type and then validate the value. This is known as permissive validation, and can help when working with unruly third-party protocols.
+
+### Strict validation
+
+In some cases, strict validation may be required rather than permissive validation. Enabling Speck's strict validation will require the input values to match their spec's attribute type or else the payload will not be valid.
+
+There are two ways to enable strict validation: globally, or per attribute.
+
+**Global**
+
+Add the top-level `strict true` property. Opt out per attribute.
+
+```elixir
+struct MQTT.AddDevice.V1
+
+name "add_device"
+
+strict true
+
+attribute :name, :string
+attribute :type, :string, strict: false
+```
+
+**Per attribute**
+
+Opt in per attribute by adding `strict: true`.
+
+```elixir
+struct MQTT.AddDevice.V1
+
+name "add_device"
+
+attribute :id,   :integer, strict: true
+attribute :name, :string
+```
