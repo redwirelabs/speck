@@ -15,7 +15,6 @@ defmodule Speck.MixProject do
       deps: deps(),
       docs: docs(),
       dialyzer: [
-        ignore_warnings: "dialyzer.ignore.exs",
         plt_add_apps: [:mix],
         list_unused_filters: true,
         plt_file: {:no_warn, plt_file_path()},
@@ -39,7 +38,7 @@ defmodule Speck.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:dialyxir, "~> 1.3", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: :dev, runtime: false},
       {:ex_doc, "~> 0.30", only: :dev, runtime: false},
     ]
   end

@@ -102,7 +102,7 @@ attribute :metadata do
   attribute :commissioned_at, :datetime
 
   attribute :ports do
-    attribute :rs485, :integer
+    attribute :rs485, :integer, strict: true
   end
 end
 
@@ -116,6 +116,7 @@ end
 
 - `struct` - Name of the Elixir struct this schema will compile to.
 - `name` (optional) - Name of this message or event on the wire.
+- `strict` (optional) - Set `true` if enforcing value type for all attributes.
 - `attribute` - An attribute in the input payload. These could also be known as fields, properties, keys.
 
 ### Attributes
@@ -143,6 +144,8 @@ Lists:
 - Create a list of any type by wrapping the type in square brackets: `[string]`
 
 Options:
+- `strict` - Set `true` if enforcing value type instead of best attempt to coerce.
+  - error - `wrong_type`
 - `default` - The default value is used if the value is not present in the input.
 - `optional` - Set `true` if a value for the attribute is not required.
   - error - `not_present`
@@ -160,3 +163,41 @@ Options:
 ### Examples
 
 Example schemas can be found in [/protocol](https://github.com/amclain/speck/tree/main/protocol).
+
+## Order of operations
+
+Speck is designed to allow developers to focus on the data coming out of Speck rather than going into Speck. Therefore, its default behavior is to attempt to coerce a value to the attribute's type and then validate the value. This is known as permissive validation, and can help when working with unruly third-party protocols.
+
+### Strict validation
+
+In some cases, strict validation may be required rather than permissive validation. Enabling Speck's strict validation will require the input values to match their spec's attribute type or else the payload will not be valid.
+
+There are two ways to enable strict validation: globally, or per attribute.
+
+**Global**
+
+Add the top-level `strict true` property. Opt out per attribute.
+
+```elixir
+struct MQTT.AddDevice.V1
+
+name "add_device"
+
+strict true
+
+attribute :name, :string
+attribute :type, :string, strict: false
+```
+
+**Per attribute**
+
+Opt in per attribute by adding `strict: true`.
+
+```elixir
+struct MQTT.AddDevice.V1
+
+name "add_device"
+
+attribute :id,   :integer, strict: true
+attribute :name, :string
+```

@@ -112,13 +112,19 @@ defmodule Mix.Tasks.Compile.Speck do
 
     {:__block__, _, top_ast} = file_ast
 
-    context = Enum.reduce(top_ast, %{attributes: []}, fn
+    initial_context =
+      %{attributes: [], strict: false}
+
+    context = Enum.reduce(top_ast, initial_context, fn
       {:struct, _, [{:__aliases__, _, _namespace} = module_ast]}, acc ->
         {module, _} = Code.eval_quoted(module_ast)
         Map.put(acc, :module, module)
 
       {:name, _, [name]}, acc ->
         Map.put(acc, :name, name)
+
+      {:strict, _, [strict]}, acc ->
+        Map.put(acc, :strict, !!strict)
 
       {:attribute, _, _} = attribute_ast, acc ->
         attributes = acc.attributes ++ [build_attribute(attribute_ast)]
@@ -135,6 +141,8 @@ defmodule Mix.Tasks.Compile.Speck do
         defmodule unquote(Macro.escape(context.module)) do
           @moduledoc false
           defstruct unquote(Macro.escape(top_level_attribute_names))
+
+          def strict, do: unquote(Macro.escape(context.strict))
 
           def attributes, do: unquote(Macro.escape(context.attributes))
         end
