@@ -10,7 +10,7 @@ in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:speck, "~> 0.1.0"}
+    {:speck, "~> 1.1.0"}
   ]
 end
 ```
