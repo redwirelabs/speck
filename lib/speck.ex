@@ -8,9 +8,9 @@ defmodule Speck do
   """
   @spec validate(schema :: module, params :: map) :: {:ok, struct}, {:error, map}
   def validate(schema, params) do
-    opts = [strict: schema.strict]
+    opts = [strict: schema.strict()]
 
-    case do_validate(:map, params, opts, schema.attributes) do
+    case do_validate(:map, params, opts, schema.attributes()) do
       {fields, errors} when errors == %{} ->
         struct = struct(schema, fields)
         {:ok, struct}
