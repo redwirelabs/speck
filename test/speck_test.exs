@@ -179,6 +179,26 @@ defmodule Speck.Test do
       }}
   end
 
+  test "can coerce a map with attribute type of any" do
+    params = %{
+      "param1" => %{},
+      "param2" => "valid"
+    }
+
+    assert Speck.validate(TestSchema.Any, params) ==
+      {:ok, %TestSchema.Any{
+        param1: %{},
+        param2: "valid"
+      }}
+  end
+
+  test "returns errors if required params of type any are missing" do
+    params = %{}
+
+    assert Speck.validate(TestSchema.Any, params) ==
+      {:error, %{param1: :not_present, param2: :not_present}}
+  end
+
   test "returns errors if items in a list of maps can't be coerced" do
     params = %{
       "devices" => [

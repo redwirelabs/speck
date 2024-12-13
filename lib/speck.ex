@@ -103,6 +103,7 @@ defmodule Speck do
     end
   end
 
+  defp do_strict_validate(:any, value, _opts), do: value
   defp do_strict_validate(:boolean, value, _opts) when is_boolean(value), do: value
   defp do_strict_validate(:integer, value, _opts) when is_integer(value), do: value
   defp do_strict_validate(:float, value, _opts) when is_float(value), do: value
@@ -161,6 +162,8 @@ defmodule Speck do
         apply_filters(name, type, raw_value, merged_opts, fields, errors, nil)
     end)
   end
+
+  defp do_validate(:any, value, _opts), do: value
 
   defp do_validate(:boolean, value, _opts) when is_boolean(value), do: value
 
