@@ -95,6 +95,7 @@ attribute :serial_number,  :string,  length: 16
 attribute :wifi_ssid,      :string,  optional: true
 attribute :low_power_mode, :boolean, optional: true
 attribute :dns_servers,    [:string]
+attribute :user_data,      :any
 
 attribute :metadata do
   attribute :location,        :string
@@ -130,6 +131,7 @@ attribute <name>, <type>, <options>
 ```
 
 Types:
+- `any`
 - `boolean`
 - `integer`
 - `float`
@@ -159,6 +161,37 @@ Options:
   - error - `invalid_value`
 - `format` - Regular expression for the valid format of a string.
   - error - `wrong_format`
+
+The `any` type:
+- Intended to be a passthrough attribute where the value is not validated or coerced but the value must be not `nil` at a minimum if `optional: false`. The `any` type is useful if you want to split out schemas where the top level schema is a generic envelope containing a nested data structure that could possibly be of a polymorphic nature. **Example**:
+
+```elixir
+struct MQTT.AWS.Shadow.Update.V1
+
+name "aws_shadow_update"
+
+attribute :state do
+  attribute :desired, :any
+end
+```
+
+```elixir
+struct MQTT.Light.State.V1
+
+name "light_state"
+
+attribute [:schedule] do
+  attribute :start, :datetime
+  attribute :stop,  :datetime
+end
+```
+
+```elixir
+with {:ok, shadow}      <- Speck.validate(MQTT.AWS.Shadow.Update.V1, payload),
+     {:ok, light_state} <- Speck.validate(MQTT.Light.State.V1, shadow.state.desired) do
+  # do something with light_state
+end
+```
 
 ### Examples
 
