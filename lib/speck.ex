@@ -6,7 +6,7 @@ defmodule Speck do
   @doc """
   Validate and coerce the params according to a schema.
   """
-  @spec validate(schema :: module, params :: map) :: {:ok, struct}, {:error, map}
+  @spec validate(schema :: module, params :: map) :: {:ok, struct} | {:error, map}
   def validate(schema, params) do
     opts = [strict: schema.strict()]
 
