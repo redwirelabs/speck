@@ -37,7 +37,7 @@ jobs:
       - name: Get dependencies
         run: mix deps.get --only dev
       - name: Restore PLTs
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
           path: _build/dev/plt
           key: plt-${{ github.ref }}-${{ github.sha }}
