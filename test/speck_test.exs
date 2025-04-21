@@ -79,14 +79,7 @@ defmodule Speck.Test do
         rs485_address: :not_present,
         serial_number: :not_present,
         dns_servers:   :not_present,
-        metadata: %{
-          location:        :not_present,
-          department:      :not_present,
-          commissioned_at: :not_present,
-          ports: %{
-            rs485: :not_present,
-          }
-        }
+        metadata: :not_present
       }}
   end
 

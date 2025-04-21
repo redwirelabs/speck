@@ -25,15 +25,6 @@ defmodule Speck do
       !is_nil(opts[:default]) && is_nil(raw_value) ->
         {Map.put(fields, name, opts[:default]), errors}
 
-      type == :map ->
-        case do_validate(type, raw_value, opts, attributes) do
-          {value, map_errors} when map_errors == %{} ->
-            {Map.put(fields, name, value), errors}
-
-          {value, map_errors} ->
-            {Map.put(fields, name, value), Map.put(errors, name, map_errors)}
-        end
-
       opts[:optional] && is_nil(raw_value) && type == :boolean ->
         {Map.put(fields, name, false), errors}
 
@@ -42,6 +33,15 @@ defmodule Speck do
 
       opts[:optional] && is_nil(raw_value) ->
         {fields, errors}
+
+      type == :map ->
+        case do_validate(type, raw_value, opts, attributes) do
+          {value, map_errors} when map_errors == %{} ->
+            {Map.put(fields, name, value), errors}
+
+          {value, map_errors} ->
+            {Map.put(fields, name, value), Map.put(errors, name, map_errors)}
+        end
 
       is_list(type) ->
         raw_value
@@ -142,6 +142,12 @@ defmodule Speck do
           end)
 
         case coerced_maplist do
+          {[], []} ->
+            {fields, errors}
+
+          {[], error} ->
+            {fields, Map.put(errors, name, error)}
+
           {value, []} ->
             {Map.put(fields, name, value), errors}
 
