@@ -130,6 +130,41 @@ defmodule Mix.Tasks.Compile.Speck do
         attributes = acc.attributes ++ [build_attribute(attribute_ast)]
         Map.put(acc, :attributes, attributes)
 
+      # This is a PoC for adding shared/reusable fragments to Speck contracts
+      # The working example uses a module loaded with `Code.require_file/1` in mix.exs
+      # The module has a function that returns a quoted list of attributes like this:
+      #
+      # defmodule MyFragment do
+      #   def include do
+      #     quote do
+      #       attribute :reading, :integer
+      #     end
+      #   end
+      # end
+      #
+      # Which can be used inside a Speck contract like:
+      #
+      # struct MQTT.AddDevice.V1
+      #
+      # name "add_device"
+      #
+      # attribute :uuid, :string, format: ~r/\A\d{5}\-\d{5}\-\d{5}\-\d{5}\-\d{5}\z/
+      #
+      # fragment MyFragment.include()
+      #
+      {:fragment, _, [fragment]}, acc ->
+        with {result, _binding} <- Code.eval_quoted(fragment),
+             {_, _, attributes_ast} <- result,
+             attributes <-
+               Enum.reduce(attributes_ast, acc.attributes, fn
+                 {:attribute, _, _} = attribute_ast, acc -> acc ++ [build_attribute(attribute_ast)]
+                 _, acc -> acc
+               end) do
+                 Map.put(acc, :attributes, attributes)
+        else
+          _ -> acc
+        end
+
       _, acc ->
         acc
     end)
