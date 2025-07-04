@@ -142,6 +142,14 @@ defmodule Speck do
           end)
 
         case coerced_maplist do
+          {[], []} ->
+            value =
+              if opts[:optional] && is_nil(get_raw_value(value, name)),
+                do: nil,
+                else: []
+
+            {Map.put(fields, name, value), errors}
+
           {value, []} ->
             {Map.put(fields, name, value), errors}
 

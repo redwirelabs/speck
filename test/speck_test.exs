@@ -126,6 +126,18 @@ defmodule Speck.Test do
       }}
   end
 
+  test "return nil if optional list is not present" do
+    params = %{
+      "device_ids" => [1, 2, 3],
+    }
+
+    assert Speck.validate(TestSchema.List, params) ==
+      {:ok, %TestSchema.List{
+        device_ids: [1, 2, 3],
+        statuses: nil
+      }}
+  end
+
   test "returns errors if a list can't be coerced" do
     params = %{
       "device_ids" => [-3, 0, 4, 19]
