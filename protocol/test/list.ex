@@ -2,5 +2,4 @@ struct TestSchema.List
 
 name "list"
 
-attribute :device_ids, [:integer], min: 1,        max: 10
-attribute :statuses,   [:string],  optional: true
+attribute :device_ids, [:integer], min: 1, max: 10

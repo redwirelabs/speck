@@ -128,13 +128,13 @@ defmodule Speck.Test do
 
   test "return nil if optional list is not present" do
     params = %{
-      "device_ids" => [1, 2, 3],
+      "status" => "failed",
     }
 
-    assert Speck.validate(TestSchema.List, params) ==
-      {:ok, %TestSchema.List{
-        device_ids: [1, 2, 3],
-        statuses: nil
+    assert Speck.validate(TestSchema.OptionalMapList, params) ==
+      {:ok, %TestSchema.OptionalMapList{
+        status: :failed,
+        transactions: nil,
       }}
   end
 
