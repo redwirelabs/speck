@@ -126,6 +126,18 @@ defmodule Speck.Test do
       }}
   end
 
+  test "return nil if optional list is not present" do
+    params = %{
+      "status" => "failed",
+    }
+
+    assert Speck.validate(TestSchema.OptionalMapList, params) ==
+      {:ok, %TestSchema.OptionalMapList{
+        status: :failed,
+        transactions: nil,
+      }}
+  end
+
   test "returns errors if a list can't be coerced" do
     params = %{
       "device_ids" => [-3, 0, 4, 19]
