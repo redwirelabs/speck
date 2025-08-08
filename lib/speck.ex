@@ -10,67 +10,94 @@ defmodule Speck do
   def validate(schema, params) do
     opts = [strict: schema.strict()]
 
-    case do_validate(:map, params, opts, schema.attributes()) do
-      {fields, errors} when errors == %{} ->
+    do_validate(:map, params, opts, schema.attributes())
+    |> then(fn {fields, errors, meta} ->
+      {fields, errors, meta_add_unknown_fields(meta, params)}
+    end)
+    |> case do
+      {fields, errors, meta} when errors == %{} ->
         struct = struct(schema, fields)
 
-        {:ok, struct, meta}
+        {:ok, struct, %Speck.ValidationMetadata{attributes: meta}}
 
-      {_fields, errors} ->
-        {:error, errors}
+      {_fields, errors, meta} ->
+        {:error, errors, %Speck.ValidationMetadata{attributes: meta}}
     end
   end
 
-  defp apply_filters(name, type, raw_value, opts, fields, errors, attributes) do
+  defp apply_filters(name, type, raw_value, opts, fields, errors, meta, attributes) do
     cond do
       !is_nil(opts[:default]) && is_nil(raw_value) ->
-        {Map.put(fields, name, opts[:default]), errors}
+        {
+          Map.put(fields, name, opts[:default]),
+          errors,
+          make_meta(name, :present, raw_value)
+        }
 
       type == :map ->
         case do_validate(type, raw_value, opts, attributes) do
-          {value, map_errors} when map_errors == %{} ->
-            {Map.put(fields, name, value), errors}
+          {value, map_errors, meta} when map_errors == %{} ->
+            {
+              Map.put(fields, name, value),
+              errors,
+              meta_append_namespace(meta, name)
+            }
 
-          {value, map_errors} ->
-            {Map.put(fields, name, value), Map.put(errors, name, map_errors)}
+          {value, map_errors, meta} ->
+            {
+              Map.put(fields, name, value),
+              Map.put(errors, name, map_errors),
+              meta_append_namespace(meta, name)
+            }
         end
 
       opts[:optional] && is_nil(raw_value) && type == :boolean ->
-        {Map.put(fields, name, false), errors}
+        {
+          Map.put(fields, name, false),
+          errors,
+          make_meta(name, :not_present, raw_value)
+        }
 
       is_nil(opts[:optional]) && is_nil(raw_value) ->
-        {fields, Map.put(errors, name, :not_present)}
+        {
+          fields,
+          Map.put(errors, name, :not_present),
+          make_meta(name, :not_present, raw_value)
+        }
 
       opts[:optional] && is_nil(raw_value) ->
-        {fields, errors}
+        {fields, errors, make_meta(name, :not_present, raw_value)}
 
       is_list(type) ->
+        IO.puts "--- apply_filters is_list"
         raw_value
         |> Enum.with_index
         |> Enum.map(fn {value, index} ->
-          {value, error} =
-              apply_filters(:item, hd(type), value, opts, fields, %{}, nil)
+          {value, error, meta} =
+            apply_filters(:item, hd(type), value, opts, fields, %{}, meta, nil)
+
+          IO.inspect meta, label: "apply_filters map meta"
 
           {index, value[:item], error[:item]}
         end)
-        |> Enum.reduce({_values = [], _errors = []}, fn
-          {_index, value, error}, {values, errors}
+        |> Enum.reduce({_values = [], _errors = [], _meta = []}, fn
+          {_index, value, error}, {values, errors, _meta}
             when is_nil(error) and errors == [] ->
               {values ++ [value], errors}
 
-          {_index, _value, error}, {_values, errors}
+          {_index, _value, error}, {_values, errors, _meta}
             when is_nil(error) ->
               {[], errors}
 
-          {index, _value, error}, {_values, errors} ->
+          {index, _value, error}, {_values, errors, _meta} ->
             {[], errors ++ [%{index: index, reason: error}]}
         end)
         |> case do
           {value, []} ->
-            {Map.put(fields, name, value), errors}
+            {Map.put(fields, name, value), errors, meta}
 
           {_value, error} ->
-            {fields, Map.put(errors, name, error)}
+            {fields, Map.put(errors, name, error), meta}
         end
 
       true ->
@@ -84,7 +111,11 @@ defmodule Speck do
 
         case validate_fn.(type, raw_value, opts) do
           {:error, error} ->
-            {fields, Map.put(errors, name, error)}
+            {
+              fields,
+              Map.put(errors, name, error),
+              make_meta(name, :present, raw_value)
+            }
 
           value ->
             {value, _error = nil}
@@ -95,10 +126,18 @@ defmodule Speck do
             |> apply_max(opts[:max])
             |> case do
               {value, nil} ->
-                {Map.put(fields, name, value), errors}
+                {
+                  Map.put(fields, name, value),
+                  errors,
+                  make_meta(name, :present, raw_value)
+                }
 
               {value, error} ->
-                {Map.put(fields, name, value), Map.put(errors, name, error)}
+                {
+                  Map.put(fields, name, value),
+                  Map.put(errors, name, error),
+                  make_meta(name, :present, raw_value)
+                }
             end
         end
     end
@@ -116,8 +155,8 @@ defmodule Speck do
   defp do_strict_validate(_type, _value, _opts), do: {:error, :wrong_type}
 
   defp do_validate(:map, value, global_opts, attributes) do
-    Enum.reduce(attributes, {%{}, %{}}, fn
-      {name, [:map], opts, attributes}, {fields, errors} ->
+    Enum.reduce(attributes, {_values = %{}, _errors = %{}, _meta = []}, fn
+      {name, [:map], opts, attributes}, {fields, errors, meta} ->
         merged_opts = Keyword.merge(global_opts, opts)
         raw_values  = get_raw_value(value, name) || []
 
@@ -125,50 +164,75 @@ defmodule Speck do
           raw_values
           |> Enum.map(&do_validate(:map, &1, merged_opts, attributes))
           |> Enum.with_index
-          |> Enum.reduce({_values = [], _errors = []}, fn
-            {{value, error}, _index}, {values, errors}
+          |> Enum.reduce({_values = [], _errors = [], _meta = []}, fn
+            {{value, error, this_meta}, index}, {values, errors, meta2}
               when error == %{} and errors == [] ->
-                {values ++ [value], errors}
+                {
+                  values ++ [value],
+                  errors,
+                  meta2 ++ meta_append_namespace(this_meta, index)
+                }
 
-            {{_value, error}, _index}, {values, errors}
+            {{_value, error, this_meta}, index}, {values, errors, meta2}
               when error == %{} ->
-                {values, errors}
+                {
+                  values,
+                  errors,
+                  meta2 ++ meta_append_namespace(this_meta, index)
+                }
 
-            {{_value, error}, index}, {_values, errors} ->
+            {{_value, error, this_meta}, index}, {_values, errors, meta2} ->
               map_errors = Enum.reduce(error, [], fn {k, v}, acc ->
                 acc ++ [%{index: index, attribute: k, reason: v}]
               end)
 
-              {[], errors ++ map_errors}
+              {
+                [],
+                errors ++ map_errors,
+                meta2 ++ meta_append_namespace(this_meta, index)
+              }
+          end)
+          |> then(fn {fields, errors, meta2} ->
+            {fields, errors, meta ++ meta_append_namespace(meta2, name)}
           end)
 
         case coerced_maplist do
-          {[], []} ->
+          {[], [], meta2} ->
+            raw_value = get_raw_value(value, name)
+
             value =
-              if opts[:optional] && is_nil(get_raw_value(value, name)),
+              if opts[:optional] && is_nil(raw_value),
                 do: nil,
                 else: []
 
-            {Map.put(fields, name, value), errors}
+            new_meta = meta2 ++ [make_meta(name, :not_present, raw_value)]
 
-          {value, []} ->
-            {Map.put(fields, name, value), errors}
+            {Map.put(fields, name, value), errors, new_meta}
 
-          {value, error} ->
-            {Map.put(fields, name, value), Map.put(errors, name, error)}
+          {value, [], meta2} ->
+            {Map.put(fields, name, value), errors, meta2}
+
+          {value, error, meta2} ->
+            {Map.put(fields, name, value), Map.put(errors, name, error), meta2}
         end
 
-      {name, :map, opts, attributes}, {fields, errors} ->
+      {name, :map, opts, attributes}, {fields, errors, meta} ->
         merged_opts = Keyword.merge(global_opts, opts)
         raw_value   = get_raw_value(value, name)
 
-        apply_filters(name, :map, raw_value, merged_opts, fields, errors, attributes)
+        {fields2, errors2, meta2} =
+          apply_filters(name, :map, raw_value, merged_opts, fields, errors, meta, attributes)
 
-      {name, type, opts}, {fields, errors} ->
+        {fields2, errors2, meta ++ meta2}
+
+      {name, type, opts}, {fields, errors, meta} ->
         merged_opts = Keyword.merge(global_opts, opts)
         raw_value   = get_raw_value(value, name)
 
-        apply_filters(name, type, raw_value, merged_opts, fields, errors, nil)
+        {fields2, errors2, meta2} =
+          apply_filters(name, type, raw_value, merged_opts, fields, errors, meta, nil)
+
+        {fields2, errors2, meta ++ [meta2]}
     end)
   end
 
@@ -352,4 +416,83 @@ defmodule Speck do
 
   defp get_raw_value(map, key) when is_map_key(map, key), do: map[key]
   defp get_raw_value(map, key), do: map[to_string(key)]
+
+  defp make_meta(name, status, value) when is_list(name) do
+    {name, status, value}
+  end
+
+  defp make_meta(name, status, value) do
+    {[to_string(name)], status, value}
+  end
+
+  defp meta_append_namespace(meta, name) when is_list(meta) do
+    Enum.map(meta, &meta_append_namespace(&1, name))
+  end
+
+  defp meta_append_namespace({path, status, value} = _meta, name) do
+    path_prefix =
+      case is_number(name) do
+        true -> name
+        _    -> to_string(name)
+      end
+
+    {[path_prefix] ++ path, status, value}
+  end
+
+  defp meta_add_unknown_fields(meta, input) do
+    input_meta = input_fields_present(input)
+
+    Enum.reduce(input_meta, meta, fn {path, raw_value}, acc ->
+      case has_field?(path, meta) do
+        true -> acc
+        _    -> acc ++ [make_meta(path, :unknown, raw_value)]
+      end
+    end)
+  end
+
+  defp input_fields_present(input) do
+    Enum.reduce(input, [], fn
+      {attribute, value}, acc when is_map(value) ->
+        acc ++ Enum.map(input_fields_present(value), fn
+          {path, value} ->
+            {[to_string(attribute)] ++ path, value}
+        end)
+
+      {attribute, value}, acc when is_list(value) ->
+        acc ++ Enum.map(Enum.with_index(value), fn
+          {item, index} ->
+            [{path2, value2}] = input_fields_present(item)
+            {[to_string(attribute), index] ++ path2, value2}
+        end)
+
+      {attribute, value}, acc ->
+        acc ++ [{[to_string(attribute)], value}]
+    end)
+  end
+
+  defp has_field?(search_path, meta) do
+    Enum.reduce_while(meta, false, fn
+      {path, _status, _value}, acc ->
+        case path_match?(search_path, path) do
+          true -> {:halt, true}
+          _    -> {:cont, acc}
+        end
+    end)
+  end
+
+  defp path_match?([], []) do
+    true
+  end
+
+  defp path_match?([:_ | rest1], [_any | rest2]) do
+    path_match?(rest1, rest2)
+  end
+
+  defp path_match?([value | rest1], [value | rest2]) do
+    path_match?(rest1, rest2)
+  end
+
+  defp path_match?(_, _) do
+    false
+  end
 end
