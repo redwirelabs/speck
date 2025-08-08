@@ -14,10 +14,6 @@ defmodule Speck do
       {fields, errors} when errors == %{} ->
         struct = struct(schema, fields)
 
-        meta = %Speck.ValidationMetadata{
-          attributes: build_attribute_metadata(params, schema.attributes())
-        }
-
         {:ok, struct, meta}
 
       {_fields, errors} ->
@@ -356,93 +352,4 @@ defmodule Speck do
 
   defp get_raw_value(map, key) when is_map_key(map, key), do: map[key]
   defp get_raw_value(map, key), do: map[to_string(key)]
-
-  defp build_attribute_metadata(input, schema_attributes) do
-    IO.inspect schema_attributes, label: "schema_attributes"
-
-    determine_input_fields(input)
-    |> mark_attributes_present(schema_attributes)
-    # determine_not_present_fields(input, schema_attributes)
-  end
-
-  defp determine_input_fields(input) do
-    Enum.reduce(input, [], fn
-      {attribute, value}, acc when is_map(value) ->
-        acc ++ Enum.map(determine_input_fields(value), fn
-          {path, status, value} ->
-            {[to_string(attribute)] ++ path, status, value}
-        end)
-
-      {attribute, value}, acc when is_list(value) ->
-        acc ++ Enum.map(Enum.with_index(value), fn
-          {item, index} ->
-            [{path2, status2, value2}] = determine_input_fields(item)
-            {[to_string(attribute), index] ++ path2, status2, value2}
-        end)
-
-      {attribute, value}, acc ->
-        # Default to the field being unknown. We check the schema later on
-        # and change this status if the attribute is in the schema.
-        acc ++ [{[to_string(attribute)], :unknown, value}]
-    end)
-  end
-
-  defp mark_attributes_present(input_fields, schema_attributes) do
-    lut = schema_to_input_field_lut(schema_attributes)
-
-    IO.inspect lut, label: "lut"
-
-    Enum.reduce(lut, Enum.with_index(input_fields), fn path, acc ->
-
-    end)
-  end
-
-  defp has_field?(search_path, attributes) do
-    Enum.reduce_while(attributes, false, fn {path, status, value} ->
-      case path_match?(search_path, path) do
-        true -> {:halt, true}
-        _    -> {:cont, acc}
-      end
-    end)
-  end
-
-  defp path_match?([], []) do
-    true
-  end
-
-  defp path_match?([:_ | rest1], [_any | rest2]) do
-    path_match?(rest1, rest2)
-  end
-
-  defp path_match?([value | rest1], [value | rest2]) do
-    path_match?(rest1, rest2)
-  end
-
-  defp path_match?(_, _) do
-    false
-  end
-
-  defp schema_to_input_field_lut(schema_attributes) do
-    Enum.reduce(schema_attributes, [], fn
-      {name, [_type], _opts, schema}, acc ->
-        acc ++ [[to_string(name), :_] ++ List.first(schema_lut(schema))]
-
-      {name, _type, _opts, schema}, acc ->
-        acc ++ [[to_string(name)] ++ List.first(schema_lut(schema))]
-
-      {name, [_type], _opts}, acc ->
-        acc ++ [[to_string(name), :_]]
-
-      {name, _type, _opts}, acc ->
-        acc ++ [[to_string(name)]]
-    end)
-  end
 end
-
-# {"partially_known_nested", 0, "attribute_3"}
-
-# {:partially_known_nested, :map, [], [{:attribute_3, :integer, []}]}
-
-# {"partially_known_nested", [_], _, [{"attribute_3", _, _}]}
-
-# {"partially_known_nested", :_, "attribute_3"}
