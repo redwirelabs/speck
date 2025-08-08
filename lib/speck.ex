@@ -13,7 +13,12 @@ defmodule Speck do
     case do_validate(:map, params, opts, schema.attributes()) do
       {fields, errors} when errors == %{} ->
         struct = struct(schema, fields)
-        {:ok, struct}
+
+        meta = %Speck.ValidationMetadata{
+          attributes: build_attribute_metadata(params)
+        }
+
+        {:ok, struct, meta}
 
       {_fields, errors} ->
         {:error, errors}
@@ -351,4 +356,24 @@ defmodule Speck do
 
   defp get_raw_value(map, key) when is_map_key(map, key), do: map[key]
   defp get_raw_value(map, key), do: map[to_string(key)]
+
+  defp build_attribute_metadata(input) do
+    Enum.reduce(input, [], fn
+      {attribute, value}, acc when is_map(value) ->
+        acc ++ Enum.map(build_attribute_metadata(value), fn
+          {path, status, value} ->
+            {[to_string(attribute)] ++ path, status, value}
+        end)
+
+      {attribute, value}, acc when is_list(value) ->
+        acc ++ Enum.map(Enum.with_index(value), fn
+          {item, index} ->
+            [{path2, status2, value2}] = build_attribute_metadata(item)
+            {[to_string(attribute), index] ++ path2, status2, value2}
+        end)
+
+      {attribute, value}, acc ->
+        acc ++ [{[to_string(attribute)], :todo, value}]
+    end)
+  end
 end
