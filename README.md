@@ -67,11 +67,11 @@ Transform data when crossing layers. In the input handler, perform the message v
 ```elixir
 def input_received(params) do
   case Speck.validate(MQTT.AddDevice.V1, params) do
-    {:ok, message} ->
+    {:ok, message, _meta} ->
       device = Device.create!(message.id, message.rs485_address)
       {:ok, device}
 
-    {:error, errors} ->
+    {:error, errors, _meta} ->
       {:error, errors}
   end
 end
@@ -187,8 +187,8 @@ end
 ```
 
 ```elixir
-with {:ok, shadow}      <- Speck.validate(MQTT.AWS.Shadow.Update.V1, payload),
-     {:ok, light_state} <- Speck.validate(MQTT.Light.State.V1, shadow.state.desired) do
+with {:ok, shadow, _meta}      <- Speck.validate(MQTT.AWS.Shadow.Update.V1, payload),
+     {:ok, light_state, _meta} <- Speck.validate(MQTT.Light.State.V1, shadow.state.desired) do
   # do something with light_state
 end
 ```
@@ -233,4 +233,64 @@ name "add_device"
 
 attribute :id,   :integer, strict: true
 attribute :name, :string
+```
+
+## Validation metadata
+
+In certain situations, only having the coerced data may not be enough, and you may need information about the input data as well. Since Speck has already traversed the input data, information about it is collected and returned as validation metadata. Speck provides `Speck.ValidationMetadata.Attribute` for working with metadata attributes that describe the input data structure.
+
+### Device shadows
+
+One scenario where Speck's metadata is helpful is when working with a device shadow, like in AWS IoT Core. This shadow uses a `desired` property for sending data to an embedded device, and `reported` for the device to report its current state. When validating one of these messages with Speck, the schema will not know about new desired properties if they are added in the cloud before the firmware is updated. Unfortunately, AWS will continue to send delta updates until these new desired properties are acknowledged in the reported properties.
+
+In this case, the metadata can be captured along with the validated message.
+
+```elixir
+{:ok, message, meta} <- Speck.validate(MQTT.AWS.Shadow.Update.V1, payload)
+```
+
+The new, unknown fields will be filtered out of `message` during the validation process, as expected. This message is trusted data that should still be sent down to the business logic layer for processing. However, the unknown fields need to be reported to the device shadow to acknowledge them. This is where `meta` comes in.
+
+Using `meta`, the unknown fields can be selected with a filter, and they can be merged into the `reported` map to send to the shadow.
+
+```elixir
+reported = %{
+  # Real data to report to the shadow ...
+}
+
+meta
+|> Attribute.list
+|> Enum.filter(fn
+    {_path, :unknown, _value} -> true
+    {_path, _status, _value}  -> false
+end)
+|> Attribute.merge(reported)
+```
+
+### Fields as actions
+
+Although typically fields in protocols carry data, sometimes their presence or a `nil` value signifies an action to perform. For example, setting a field `nil` signifies a delete (remove/cleanup) should be performed, versus the field not being present meaning there is no change. Speck's coercion process intentionally obscures this, since the primary goal is to normalize the input into a consistent data structure. This is another situation where Speck's metadata can be used to determine which fields are marked for deletion.
+
+```elixir
+{:ok, message, meta} <- Speck.validate(DeltaMessage, payload)
+
+attributes_to_delete =
+  meta
+  |> Attribute.list
+  |> Enum.filter(fn
+      {_path, :present, nil}   -> true
+      {_path, _status, _value} -> false
+  end)
+  |> Attribute.merge(%{})
+```
+
+The resulting map can then be traversed in the business logic layer, performing removal actions for each component that a nil field represents.
+
+```
+%{
+  "device_is_installed" => nil,
+  "remote_sensors" => [
+    %{"temperature_sensor_1" => nil}
+  ]
+}
 ```
