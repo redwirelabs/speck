@@ -254,17 +254,26 @@ The new, unknown fields will be filtered out of `message` during the validation 
 Using `meta`, the unknown fields can be selected with a filter, and they can be merged into the `reported` map to send to the shadow.
 
 ```elixir
-reported = %{
-  # Real data to report to the shadow ...
+shadow = %{
+  state: %{
+    reported: %{
+      # Real data to report to the shadow ...
+    }
+  }
 }
 
 meta
 |> Attribute.list
 |> Enum.filter(fn
-    {_path, :unknown, _value} -> true
+    # Only  capture the device shadow state, not the metadata.
+    {["state" | _rest], :unknown, _value} -> true
     {_path, _status, _value}  -> false
 end)
-|> Attribute.merge(reported)
+|> Enum.map(fn
+  {["state" | rest], status, value} ->
+    {["state", "reported"] ++ rest, status, value}
+)
+|> Attribute.merge(shadow)
 ```
 
 ### Fields as actions
