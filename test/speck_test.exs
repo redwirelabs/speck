@@ -7,6 +7,7 @@ defmodule Speck.Test do
       "type"           => "air_quality",
       "rs485_address"  => "5",
       "serial_number"  => "DEVICE1234567890",
+      # wifi_ssid      => not present
       # low_power_mode => not present
       "dns_servers"    => [
         "1.1.1.1",
@@ -34,7 +35,7 @@ defmodule Speck.Test do
         rs485_address:  5,
         serial_number:  "DEVICE1234567890",
         wifi_ssid:      nil,
-        low_power_mode: false,
+        low_power_mode: nil,
         dns_servers:    [
           "1.1.1.1",
           "1.0.0.1",
@@ -702,8 +703,8 @@ defmodule Speck.Test do
         attribute_5: 5
       },
       list_attribute_1: [
-        %{},
-        %{attribute_9: 9}
+        %{attribute_9: nil},
+        %{attribute_9: 9},
       ],
       list_attribute_2: []
     }
@@ -767,7 +768,7 @@ defmodule Speck.Test do
       partially_known_nested: %{
         attribute_5: 5
       },
-      list_attribute_1: [%{}],
+      list_attribute_1: [%{attribute_9: nil}],
       list_attribute_2: []
     }
 
