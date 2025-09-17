@@ -57,13 +57,6 @@ defmodule Speck do
             }
         end
 
-      opts[:optional] && is_nil(raw_value) && type == :boolean ->
-        {
-          Map.put(fields, name, false),
-          errors,
-          make_meta(name, field_status, raw_value)
-        }
-
       is_nil(opts[:optional]) && is_nil(raw_value) ->
         {
           fields,
@@ -72,7 +65,11 @@ defmodule Speck do
         }
 
       opts[:optional] && is_nil(raw_value) ->
-        {fields, errors, make_meta(name, field_status, raw_value)}
+        {
+          Map.put(fields, name, nil),
+          errors,
+          make_meta(name, field_status, raw_value)
+        }
 
       is_list(type) ->
         raw_value
