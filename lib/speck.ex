@@ -228,9 +228,14 @@ defmodule Speck do
         end
 
       {name, :map, opts, attributes}, {fields, errors, meta} ->
-        merged_opts = Keyword.merge(global_opts, opts)
         raw_value   = get_raw_value(value, name)
         present     = is_present?(value, name)
+        optional    = opts[:optional] == true
+
+        merged_opts = case optional && is_nil(raw_value) do
+          true -> Keyword.merge(global_opts, opts)
+          false -> global_opts
+        end
 
         {fields2, errors2, meta2} =
           apply_filters(name, :map, raw_value, present, merged_opts, fields, errors, attributes)
