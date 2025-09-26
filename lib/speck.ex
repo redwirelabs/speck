@@ -40,6 +40,13 @@ defmodule Speck do
           make_meta(name, field_status, raw_value)
         }
 
+      type == :map && is_nil(raw_value) && opts[:optional] ->
+        {
+          Map.put(fields, name, nil),
+          errors,
+          [make_meta(name, field_status, raw_value)]
+        }
+
       type == :map ->
         case do_validate(type, raw_value, opts, attributes) do
           {value, map_errors, meta} when map_errors == %{} ->
