@@ -29,7 +29,7 @@ defmodule Speck do
     end
   end
 
-  defp apply_filters(name, type, raw_value, field_present, opts, fields, errors, attributes) do
+  defp apply_filters(name, type, raw_value, field_present, global_opts, opts, fields, errors, attributes) do
     field_status = if field_present, do: :present, else: :not_present
 
     cond do
@@ -48,7 +48,7 @@ defmodule Speck do
         }
 
       type == :map ->
-        case do_validate(type, raw_value, opts, attributes) do
+        case do_validate(type, raw_value, global_opts, attributes) do
           {value, map_errors, meta} when map_errors == %{} ->
             {
               Map.put(fields, name, value),
@@ -83,7 +83,7 @@ defmodule Speck do
         |> Enum.with_index
         |> Enum.map(fn {value, index} ->
           {value, error, _meta} =
-            apply_filters(:item, hd(type), value, true, opts, fields, %{}, nil)
+            apply_filters(:item, hd(type), value, true, global_opts, opts, fields, %{}, nil)
 
           {index, value[:item], error[:item]}
         end)
@@ -116,7 +116,8 @@ defmodule Speck do
         end
 
       true ->
-        strict_validation = opts[:strict]
+        merged_opts = Keyword.merge(global_opts, opts)
+        strict_validation = merged_opts[:strict]
 
         validate_fn =
           case strict_validation do
@@ -124,7 +125,7 @@ defmodule Speck do
             _ -> &do_validate/3
           end
 
-        case validate_fn.(type, raw_value, opts) do
+        case validate_fn.(type, raw_value, global_opts) do
           {:error, error} ->
             {
               fields,
@@ -172,12 +173,11 @@ defmodule Speck do
   defp do_validate(:map, value, global_opts, attributes) do
     Enum.reduce(attributes, {_values = %{}, _errors = %{}, _meta = []}, fn
       {name, [:map], opts, attributes}, {fields, errors, meta} ->
-        merged_opts = Keyword.merge(global_opts, opts)
         raw_values  = get_raw_value(value, name) || []
 
         coerced_maplist =
           raw_values
-          |> Enum.map(&do_validate(:map, &1, merged_opts, attributes))
+          |> Enum.map(&do_validate(:map, &1, global_opts, attributes))
           |> Enum.with_index
           |> Enum.reduce({_values = [], _errors = [], _meta = []}, fn
             {{value, error, this_meta}, index}, {values, errors, meta2}
@@ -230,25 +230,18 @@ defmodule Speck do
       {name, :map, opts, attributes}, {fields, errors, meta} ->
         raw_value   = get_raw_value(value, name)
         present     = is_present?(value, name)
-        optional    = opts[:optional] == true
-
-        merged_opts = case optional && is_nil(raw_value) do
-          true -> Keyword.merge(global_opts, opts)
-          false -> global_opts
-        end
 
         {fields2, errors2, meta2} =
-          apply_filters(name, :map, raw_value, present, merged_opts, fields, errors, attributes)
+          apply_filters(name, :map, raw_value, present, global_opts, opts, fields, errors, attributes)
 
         {fields2, errors2, meta ++ meta2}
 
       {name, type, opts}, {fields, errors, meta} ->
-        merged_opts = Keyword.merge(global_opts, opts)
         raw_value   = get_raw_value(value, name)
         present     = is_present?(value, name)
 
         {fields2, errors2, meta2} =
-          apply_filters(name, type, raw_value, present, merged_opts, fields, errors, nil)
+          apply_filters(name, type, raw_value, present, global_opts, opts, fields, errors, nil)
 
         {fields2, errors2, meta ++ [meta2]}
     end)
