@@ -3,6 +3,15 @@ defmodule Speck.ValidationMetadata.Attribute.Test do
 
   alias Speck.ValidationMetadata.Attribute
 
+  test "merge adds nested maps that don't exist" do
+    attributes = [
+      {["state", "reported", "serial"], :present, "sn1234"}
+    ]
+
+    assert Attribute.merge(attributes, %{}) ==
+      %{"state" => %{"reported" => %{"serial" => "sn1234"}}}
+  end
+
   describe "use case" do
     test "can merge unknown attributes back into a device shadow" do
       shadow_reported = %{
