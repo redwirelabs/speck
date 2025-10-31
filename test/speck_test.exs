@@ -230,6 +230,67 @@ defmodule Speck.Test do
     } = Speck.validate(TestSchema.Any, params)
   end
 
+  test "can return nil for optional map when nil or not present" do
+    params = %{
+      "id" => 1,
+      "status" => :complete
+    }
+
+    assert {
+      :ok,
+      %TestSchema.OptionalMap{id: 1, status: :complete, meta: nil},
+      _meta
+    } = Speck.validate(TestSchema.OptionalMap, params)
+
+    params = %{
+      "id" => 1,
+      "status" => :complete,
+      "meta" => nil
+    }
+
+    assert {
+      :ok,
+      %TestSchema.OptionalMap{id: 1, status: :complete, meta: nil},
+      _meta
+    } = Speck.validate(TestSchema.OptionalMap, params)
+  end
+
+  test "applies field defaults to optional map attributes" do
+    params = %{
+      "id" => 1,
+      "status" => :complete,
+      "meta" => %{"size" => 1}
+    }
+
+    assert {
+      :ok,
+      %TestSchema.OptionalMap{
+        meta: %{
+          size: 1,
+          color: nil,
+          shape: :circle
+        },
+        id: 1,
+        status: :complete
+      },
+      _meta
+    } = Speck.validate(TestSchema.OptionalMap, params)
+  end
+
+  test "enforces required field rules to optional map attributes when map is present" do
+    params = %{
+      "id" => 1,
+      "status" => :complete,
+      "meta" => %{"color" => "blue"}
+    }
+
+    assert {
+      :error,
+      %{meta: %{size: :not_present}},
+      _meta
+    } = Speck.validate(TestSchema.OptionalMap, params)
+  end
+
   test "returns errors if required params of type any are missing" do
     params = %{}
 

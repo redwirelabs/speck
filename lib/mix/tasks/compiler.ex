@@ -173,6 +173,12 @@ defmodule Mix.Tasks.Compile.Speck do
     {name, :map, [], Enum.map(attributes_ast, &build_attribute/1)}
   end
 
+  defp build_attribute({:attribute, _, [name, opts_ast, [do: attributes_ast]]}) do
+    {opts, _} = Code.eval_quoted(opts_ast)
+
+    {name, :map, opts, [build_attribute(attributes_ast)]}
+  end
+
   defp build_attribute({:attribute, _, [name, [do: attributes_ast]]}) do
     {name, :map, [], [build_attribute(attributes_ast)]}
   end
