@@ -3,6 +3,57 @@ defmodule Speck.ValidationMetadata.Attribute.Test do
 
   alias Speck.ValidationMetadata.Attribute
 
+  test "merge adds nested maps that don't exist" do
+    attributes = [
+      {["state", "reported", "serial"], :present, "sn1234"}
+    ]
+
+    assert Attribute.merge(attributes, %{}) ==
+      %{"state" => %{"reported" => %{"serial" => "sn1234"}}}
+  end
+
+  describe "merge strategy" do
+    test "attribute priority" do
+      params = %{"name" => "Test Device"}
+
+      attributes = [
+        {["name"], :present, "My Device"}
+      ]
+
+      assert Attribute.merge(attributes, params, merge_strategy: :attribute_priority) ==
+        %{"name" => "My Device"}
+
+      params = %{"state" => %{"reported" => %{"name" => "Test Device"}}}
+
+      attributes = [
+        {["state", "reported", "name"], :present, "My Device"}
+      ]
+
+      assert Attribute.merge(attributes, params, merge_strategy: :attribute_priority) ==
+        %{"state" => %{"reported" => %{"name" => "My Device"}}}
+    end
+
+    test "param priority" do
+      params = %{"name" => "Test Device"}
+
+      attributes = [
+        {["name"], :present, "My Device"}
+      ]
+
+      assert Attribute.merge(attributes, params, merge_strategy: :param_priority) ==
+        %{"name" => "Test Device"}
+
+      params = %{"state" => %{"reported" => %{"name" => "Test Device"}}}
+
+      attributes = [
+        {["state", "reported", "name"], :present, "My Device"}
+      ]
+
+      assert Attribute.merge(attributes, params, merge_strategy: :param_priority) ==
+        %{"state" => %{"reported" => %{"name" => "Test Device"}}}
+    end
+  end
+
   describe "use case" do
     test "can merge unknown attributes back into a device shadow" do
       shadow_reported = %{
