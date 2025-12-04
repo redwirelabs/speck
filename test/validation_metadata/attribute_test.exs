@@ -12,6 +12,26 @@ defmodule Speck.ValidationMetadata.Attribute.Test do
       %{"state" => %{"reported" => %{"serial" => "sn1234"}}}
   end
 
+  test "merge nested lists" do
+    attributes = [
+      {["state", "reported", "a", 0, "b", 0, "c", 0, "d", 0, "id"], :unknown, 1001},
+      {["state", "reported", "a", 1, "b", 0, "c", 0, "d", 0, "id"], :unknown, 1002},
+    ]
+
+    params = %{state: %{reported: %{}}}
+
+    assert Attribute.merge(attributes, params) == %{
+      "state" => %{
+        "reported" => %{
+          "a" => [
+            %{"b" => [%{"c" => [%{"d" => [%{"id" => 1001}]}]}]},
+            %{"b" => [%{"c" => [%{"d" => [%{"id" => 1002}]}]}]},
+          ]
+        }
+      }
+    }
+  end
+
   describe "merge strategy" do
     test "attribute priority" do
       params = %{"name" => "Test Device"}
