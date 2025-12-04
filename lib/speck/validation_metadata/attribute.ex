@@ -43,7 +43,7 @@ defmodule Speck.ValidationMetadata.Attribute do
 
   defp merge(nil = _params, [attribute | path], value, strategy)
     when not is_integer(attribute) do
-      %{attribute => merge(%{}, path, value, strategy)}
+      %{attribute => merge(nil, path, value, strategy)}
   end
 
   defp merge(params, [path], value, strategy) when is_map(params) do
