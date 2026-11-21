@@ -173,6 +173,18 @@ defmodule Speck.Test do
     } = Speck.validate(TestSchema.List, params)
   end
 
+  test "returns wrong_type if a list attribute is given a single value" do
+    params = %{
+      "device_ids" => 1
+    }
+
+    assert {
+      :error,
+      %{device_ids: :wrong_type},
+      _meta
+    } = Speck.validate(TestSchema.List, params)
+  end
+
   test "can coerce a list of maps with a single attribute" do
     params = %{
       "devices" => [

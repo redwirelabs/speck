@@ -78,7 +78,7 @@ defmodule Speck do
           make_meta(name, field_status, raw_value)
         }
 
-      is_list(type) ->
+      is_list(type) and is_list(raw_value) ->
         raw_value
         |> Enum.with_index
         |> Enum.map(fn {value, index} ->
